@@ -103,6 +103,11 @@ RUN apt-get install -y \
 
 RUN wget -qO- "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.tar.gz" | tar --strip-components=1 -xz -C /usr/local
 
+WORKDIR /angiogen
+COPY requirements.txt .
+# Install pip dependancy.
+RUN pip install -r requirements.txt
+
 WORKDIR /external/gvxr
 RUN mkdir src && mkdir bin && mkdir install
 COPY external/gvirtualxray src
@@ -132,9 +137,9 @@ ENV NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute
 WORKDIR /angiogen
 RUN cp /external/gvxr/install/gvxrWrapper-1.0.1/python3/* .
 
-COPY requirements.txt .
-# Install pip dependancy.
-RUN pip install -r requirements.txt
+# COPY requirements.txt .
+# # Install pip dependancy.
+# RUN pip install -r requirements.txt
 
 COPY angiogen .
 

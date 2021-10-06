@@ -273,6 +273,34 @@ double g_scale_filter = 1;
 bool g_has_own_gl_context = false;
 
 
+
+
+
+
+
+
+int perturbVertices(const std::string& aLabel) {
+    // Find the mesh
+    gVirtualXRay::SceneGraphNode* p_node = g_p_scene_graph->getNode(aLabel);
+
+    // It has been found
+    if (p_node)
+        {
+        // Set its properties
+        return p_node->getPolygonMesh().getVertexNumber();
+    }
+    // It has not been found
+    else
+        {
+        cerr << "gvxrWarning:\tPolygonMesh " <<
+            aLabel <<
+            " not found in g_p_polygon_mesh_set." <<
+            endl;
+        }
+    return -1;
+}
+
+
 //******************************************************************************
 //  Function definitions
 //******************************************************************************

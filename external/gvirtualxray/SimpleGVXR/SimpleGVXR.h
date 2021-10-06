@@ -72,6 +72,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 
 
+int perturbVertices(const std::string& aLabel);
+
+
 //------------------------------------------------------------------------------
 /// Accessor on the major version of the core gVirtualXRay library (gvxr).
 /// This number is changed when incompatible API changes have been made.
