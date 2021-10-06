@@ -137,14 +137,11 @@ ENV NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute
 WORKDIR /angiogen
 RUN cp /external/gvxr/install/gvxrWrapper-1.0.1/python3/* .
 
-RUN apt-get install -y xvfb
-
 # COPY requirements.txt .
 # # Install pip dependancy.
 # RUN pip install -r requirements.txt
 
 COPY angiogen .
 
-
 # This command execute at the time when the container starts.
-CMD xvfb-run python3 pyload.py
+CMD ["python3", "pyload.py"]
