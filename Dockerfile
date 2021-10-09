@@ -138,6 +138,7 @@ WORKDIR /angiogen
 RUN cp /external/gvxr/install/gvxrWrapper-1.0.1/python3/* .
 
 RUN apt-get install -y xvfb
+RUN pip install scikit-image tqdm
 
 # COPY requirements.txt .
 # # Install pip dependancy.
@@ -146,5 +147,7 @@ RUN apt-get install -y xvfb
 COPY angiogen .
 
 
+
 # This command execute at the time when the container starts.
-CMD xvfb-run python3 pyload.py
+# CMD xvfb-run python3 pyload.py
+CMD xvfb-run python3 generate_renderings.py

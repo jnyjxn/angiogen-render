@@ -3,7 +3,7 @@ import multiprocessing.pool as mpp
 
 # Sample flask API for docker demo
 from flask_restful import Resource, Api
-from flask import Flask, send_file, jsonify
+from flask import Flask, send_file, jsonify, request
 
 from pathlib import Path
 from base64 import encodebytes
@@ -11,7 +11,7 @@ from base64 import encodebytes
 import os
 import sys
 import base64
-#import pyrender
+import pyrender
 import importlib
 import numpy as np
 from PIL import Image
@@ -280,6 +280,9 @@ class XRayRenderer(_Renderer):
 		return image.astype(np.uint8), depth
 
 	def centre_table(self, mesh, **kwargs):
+		if "protocol_item" in kwargs:
+			mesh = kwargs.get("protocol_item")["centre"].get("mesh")
+
 		cx, cy, cz = mesh.centroid
 		self.configuration["position"] = [-cx, -cy, -cz]
 
@@ -333,7 +336,24 @@ class XRayRenderer(_Renderer):
 	def generate_data(self, **kwargs):
 		print("Setting props")
 
-		protocol = protocol = [["capture"]]
+		ppa = kwargs.get("ppa", 0)
+		psa = kwargs.get("psa", 0)
+		mesh = kwargs.get("mesh")
+
+		protocol = [
+			{
+				"fluoroscope": {
+					"ppa": ppa,
+					"psa": psa
+				}
+			},
+			{
+				"centre": {
+					"mesh": mesh
+				}
+			},
+			["capture"]
+		]
 
 		images, depths, matrices = self.perform_protocol(protocol, mesh=None)
 
@@ -412,67 +432,75 @@ def convert_to_bytes_list(image_np):
 
 	return im
 
-def get_xr(mesh_type="pipes_A", mesh_id="00001", n_negatives=32):
-	mesh = Path(f'/data/{mesh_type}/{mesh_id}/mesh.npz')
-	stl_mesh = f'/data/{mesh_type}/{mesh_id}/mesh.stl'
+def get_xr(ppa=0, psa=0):
+	mesh = Path("/data/001/variants/pruned_0_stenosis_0/mesh.npz")
+	stl_mesh = "/data/001/variants/pruned_0_stenosis_0/mesh.stl"
+
+	dat = np.load(mesh)
+
+	verts = dat["verts"]
+	faces = dat["faces"]
+
+	mesh = pyrender.Mesh([pyrender.Primitive(positions=verts, indices=faces)])
 
 	r = XRayRenderer(1, debug=True)
 	r.add_scene(stl_mesh)
 
-	results = []
-	for x in range(1, n_negatives+1):
-		r.resetMesh()
-		r.deformMesh(xx=2*x, yy=0.5*x, zz=1*x, yx=0.5*x, zx=0.5*x, xy=0.5*x, zy=0.5*x, xz=0.5*x, yz=0.5*x)
-		images, _, _, = r.generate_data()
-		image = images[:,:,0]
+	x = 1
+	r.resetMesh()
+	# r.centre_table(mesh)
 
-		rgb_image = np.zeros((image.shape[0], image.shape[1], 3))
-		rgb_image[:, :, 0] = image
-		rgb_image[:, :, 1] = image
-		rgb_image[:, :, 2] = image
+	images, _, _, = r.generate_data(ppa=ppa, psa=psa, mesh=mesh)
+	image = images[:,:,0]
 
-		im = Image.fromarray(rgb_image.astype(np.uint8))
+	rgb_image = np.zeros((image.shape[0], image.shape[1], 3))
+	rgb_image[:, :, 0] = image
+	rgb_image[:, :, 1] = image
+	rgb_image[:, :, 2] = image
 
-		img_io = BytesIO()
-		im.save(img_io, 'PNG')
-		img_io = encodebytes(img_io.getvalue()).decode('ascii')
-		
-		results.append(img_io)
+	im = Image.fromarray(rgb_image.astype(np.uint8))
 
-	return results
-	# img_io.seek(0)
-	# return send_file(img_io, mimetype='image/png')
+	img_io = BytesIO()
+	im.save(img_io, 'PNG')
+	
+	img_io.seek(0)
+	return send_file(img_io, mimetype='image/png')
 
 
-def generate_images():
+def generate_images(ppa=0, psa=0):
 	seed_start, seed_end = 1, 1
 	seeds = range(seed_start, seed_end + 1)
 
-	max_processes = 4
+	# max_processes = 4
 
-	num_processes = len(seeds) if len(seeds) < max_processes else max_processes
-	mpp.Pool.istarmap = istarmap
+	# num_processes = len(seeds) if len(seeds) < max_processes else max_processes
+	# mpp.Pool.istarmap = istarmap
 
-	results = []
-	n_negatives = 4
+	# results = []
+	# n_negatives = 4
 
-	with Pool(num_processes) as p:
-		iterable = [("pipes_B", f"{seed:05}", n_negatives) for seed in seeds]
-		for result in p.istarmap(get_xr, iterable):
-			results.append(result)
+	# with Pool(num_processes) as p:
+	# 	iterable = [("pipes_B", f"{seed:05}", n_negatives) for seed in seeds]
+	# 	for result in p.istarmap(get_xr, iterable):
+	# 		results.append(result)
 	
-	# return results
-	return jsonify({
-			"images": results
-		})
+	# # return results
+	# return jsonify({
+	# 		"images": results
+	# 	})
+	return get_xr(ppa=ppa, psa=psa)
 
 import time
 
 class XRayRender(Resource):
 	def get(self):
 		t1 = time.time()
+		args = request.args
+		
+		ppa = float(args.get("ppa", 0))
+		psa = float(args.get("psa", 0))
 
-		results = generate_images()
+		results = generate_images(ppa=ppa, psa=psa)
 
 		t2 = time.time()
 		
