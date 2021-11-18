@@ -12,40 +12,16 @@ from skimage.transform import resize as sk_resize
 from MatrixCalculator import MatrixCalculator
 
 class _Renderer(object):
-	def __init__(self):
+	def __init__(self, SID=1040, beam_energy=150, pixel_size=(0.25, 0.25), image_size=(1526, 1496)):
 		self.configuration = {
 			"angle": [0, 0],        #(Positioner Primary Angle, Positioner Secondary Angle)
 			"position": [0, 0, 0]   #(TableX, TableY, TableZ)
 		}
 
-	def load_mesh(self, path):
-		dat = np.load(path)
-
-		verts = dat["verts"]
-		faces = dat["faces"]
-
-		return pyrender.Mesh([pyrender.Primitive(positions=verts, indices=faces)])
-
-	@property
-	def SID(self):
-		return 1040
-
-	@property
-	def beam_energy(self):
-		return 150
-
-	@property
-	def pixel_size(self):
-		return (
-			0.25,0.25
-		)
-
-	@property
-	def image_size(self):
-		return (
-			1526,
-			1496
-		)
+		self.SID = SID
+		self.beam_energy = beam_energy
+		self.pixel_size	= pixel_size
+		self.image_size = image_size
 
 	@property
 	def pose(self):
@@ -65,8 +41,8 @@ class _Renderer(object):
 		)
 
 class XRayRenderer(_Renderer):
-	def __init__(self, debug=False):
-		super().__init__()
+	def __init__(self, SID=1040, beam_energy=150, pixel_size=(0.25, 0.25), image_size=(1526, 1496), debug=False):
+		super().__init__(SID, beam_energy, pixel_size, image_size)
 		self.debug = debug
 		if not self.debug:
 			self._redirect_output()
@@ -211,13 +187,62 @@ class XRayRenderer(_Renderer):
 		return True
 
 
-def make_images(folder_path, seed=1, epoch=1):
-	multiplier = 10000
-	rng = np.random.default_rng(seed + multiplier*epoch)
+def make_images(folder_path, image_set_definitions, seed=1, epoch=1, overwrite=False):
+	if not overwrite and (folder_path / "eclectic.npy").exists() and (folder_path / "orthogonal.npy").exists():
+		return True
 
 	stl_mesh = str(folder_path / "mesh.stl")
-	r = XRayRenderer(1)
+	r = XRayRenderer()
 	r.add_scene(stl_mesh)
+	
+	for set_name, set_angles in image_set_definitions.items():
+		r.save_image_set(set_angles, folder_path, view_name=set_name, resize=[256, 256], save_png=True)
+
+	return True
+
+successful = []
+unsuccessful = []
+
+def add_successful(result):
+	successful.append(result)
+
+def add_unsuccessful(result):
+	unsuccessful.append(result)
+
+def make_images(mesh_dirs, image_set_definitions, n_processes=-1):
+	if n_processes < 0:
+		n_processes = multiprocessing.cpu_count()
+
+	start_time = time.time()
+	pool = multiprocessing.Pool(processes=n_processes)
+
+	jobs = [
+		pool.apply_async(
+			make_images, 
+			kwds={"folder_path": path, "seed": idx, "overwrite": True}, 
+			callback=add_successful, 
+			error_callback=add_unsuccessful
+			) for idx, path in enumerate(mesh_dirs)
+		]
+		
+	pool.close()
+	result_list_tqdm = []
+	for job in tqdm(jobs):
+		result_list_tqdm.append(job.get())
+	pool.join()
+
+	elapsed_time = time.time() - start_time
+
+	return successful, unsuccessful, elapsed_time
+
+if __name__ == "__main__":
+	root_dir = Path("/data")
+	
+	meshes = sorted(root_dir.rglob("**/mesh.stl"))
+	mesh_dirs = [mesh.parents[0] for mesh in meshes]
+
+	seed = 10000
+	rng = np.random.default_rng(seed)
 
 	orthogonal_set = [
 		(0, 0),
@@ -231,46 +256,13 @@ def make_images(folder_path, seed=1, epoch=1):
 		phi = 180*np.arccos(2*rng.random()-1.0)/np.pi
 
 		random_set += [(theta, phi)]
-
-	r.save_image_set(orthogonal_set, folder_path, view_name="orthogonal", resize=[256, 256])
-	r.save_image_set(random_set, folder_path, view_name="eclectic", resize=[256, 256])
-
-successful = []
-unsuccessful = []
-
-def add_successful(result):
-	successful.append(result)
-
-def add_unsuccessful(result):
-	unsuccessful.append(result)
-
-if __name__ == "__main__":
-	start_time = time.time()
-
-	root_dir = Path("/data")
-	pad = 3
 	
-	meshes = sorted(root_dir.rglob("**/mesh.stl"))
-	mesh_dirs = [mesh.parents[0] for mesh in meshes]
+	image_sets = {
+		"orthogonal": orthogonal_set,
+		"random": random_set,
+	}
 
-	# n_processes = 24
-	
-	pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
-
-	jobs = [
-		pool.apply_async(
-			make_images, 
-			kwds={"folder_path": path, "seed": idx}, 
-			callback=add_successful, 
-			error_callback=add_unsuccessful
-			) for idx, path in enumerate(mesh_dirs)
-		]
-		
-	pool.close()
-	result_list_tqdm = []
-	for job in tqdm(jobs):
-		result_list_tqdm.append(job.get())
-	pool.join()
+	successful, unsuccessful, elapsed_time = make_images(mesh_dirs, image_set_definitions)
 
 	if len(unsuccessful) > 0:
 		print("ALERT: Some jobs finished unsuccessfully.")
