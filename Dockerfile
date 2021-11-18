@@ -1,4 +1,5 @@
-FROM nvidia/cuda:11.4.2-cudnn8-runtime-ubuntu20.04
+FROM nvidia/cuda:11.4.2-base-ubuntu20.04
+# FROM nvidia/cuda:11.4.2-cudnn8-runtime-ubuntu20.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
@@ -105,6 +106,7 @@ RUN wget -qO- "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.tar.gz" |
 
 WORKDIR /angiogen
 COPY requirements.txt .
+
 # Install pip dependancy.
 RUN pip install -r requirements.txt
 
@@ -127,6 +129,7 @@ RUN cmake \
         -DUSE_SYSTEM_LIBTIFF=ON \
         -S /external/gvxr/src \
         -B $PWD
+
 RUN make -j32
 
 ENV EGL_PLATFORM=x11
@@ -140,14 +143,6 @@ RUN cp /external/gvxr/install/gvxrWrapper-1.0.1/python3/* .
 RUN apt-get install -y xvfb
 RUN pip install scikit-image tqdm
 
-# COPY requirements.txt .
-# # Install pip dependancy.
-# RUN pip install -r requirements.txt
-
 COPY angiogen .
 
-
-
-# This command execute at the time when the container starts.
-# CMD xvfb-run python3 pyload.py
 CMD xvfb-run python3 generate_renderings.py
