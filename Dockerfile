@@ -1,5 +1,4 @@
 FROM nvidia/cuda:11.4.2-base-ubuntu20.04
-# FROM nvidia/cuda:11.4.2-cudnn8-runtime-ubuntu20.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
@@ -16,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     screen \
     openssh-server \
     pkg-config \
+    unrar \
     build-essential \
     freeglut3-dev \
     libatlas-base-dev \
@@ -141,8 +141,8 @@ WORKDIR /angiogen
 RUN cp /external/gvxr/install/gvxrWrapper-1.0.1/python3/* .
 
 RUN apt-get install -y xvfb
-RUN pip install scikit-image tqdm
+RUN pip install scikit-image tqdm fastapi "uvicorn[standard]"
 
 COPY angiogen .
 
-CMD xvfb-run python3 generate_renderings.py
+CMD xvfb-run uvicorn server:app --host 0.0.0.0 --port 80

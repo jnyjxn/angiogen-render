@@ -1,3 +1,5 @@
+import os
+import sys
 import time
 
 import pyrender
@@ -9,7 +11,7 @@ import multiprocessing
 from pathlib import Path
 from skimage.transform import resize as sk_resize
 
-from MatrixCalculator import MatrixCalculator
+from utils.MatrixCalculator import MatrixCalculator
 
 class _Renderer(object):
 	def __init__(self, SID=1040, beam_energy=150, pixel_size=(0.25, 0.25), image_size=(1526, 1496)):
@@ -131,11 +133,11 @@ class XRayRenderer(_Renderer):
 
 		self.gvxr.translateScene(delta_table_x, delta_table_y, delta_table_z, "mm")
 
-	def add_scene(self, stl_filepath):
+	def add_mesh(self, stl_filepath, element="I"):
 		# TODO: Figure out why of the below two lines, one works on some meshes and the other on others
 		self.gvxr.loadSceneGraph(stl_filepath, "mm")
 		# self.gvxr.loadMeshFile("Exported", stl_filepath, "mm")
-		self.gvxr.setElement("Exported", "I")
+		self.gvxr.setElement("Exported", element)
 	
 	def deformMesh(self, xx=1, yy=1, zz=1, yx=0, zx=0, xy=0, zy=0, xz=0, yz=0):
 		self.gvxr.shearNode("Exported", yx, zx, xy, zy, xz, yz)
@@ -186,54 +188,82 @@ class XRayRenderer(_Renderer):
 
 		return True
 
+class RenderEngine:
+	@staticmethod
+	def make_images(folder_path, image_set_definitions, overwrite=False):
+		if not overwrite and all([(folder_path / f"{name}.npy").exists() for name in image_set_definitions]):
+			return True
 
-def make_images(folder_path, image_set_definitions, seed=1, epoch=1, overwrite=False):
-	if not overwrite and (folder_path / "eclectic.npy").exists() and (folder_path / "orthogonal.npy").exists():
+		t1 = time.time()
+		r = XRayRenderer(debug=True)
+		t2 = time.time()
+
+		meshes_and_their_chemical_elements = {
+			"mesh.stl": "I",
+			# "myo_lv.stl": "I",
+			# "myo_rv.stl": "I",
+			# "myo_epi.stl": "I",
+			# "joined.stl": "I"
+		}
+
+		t3 = time.time()
+		for mesh_filepath, element in meshes_and_their_chemical_elements.items():
+			r.add_mesh(str(folder_path / mesh_filepath), element)
+		
+		t4 = time.time()
+		for set_name, set_angles in image_set_definitions.items():
+			r.save_image_set(set_angles, folder_path, view_name=set_name, resize=[1024, 1024], save_png=True)
+
+		t5 = time.time()
+
+		print(f"Time to load scene graph: {t2-t1}")
+		print(f"Time to add meshes: {t4-t3}")
+		print(f"Time to save images: {t5-t4}")
+
+
 		return True
 
-	stl_mesh = str(folder_path / "mesh.stl")
-	r = XRayRenderer()
-	r.add_scene(stl_mesh)
-	
-	for set_name, set_angles in image_set_definitions.items():
-		r.save_image_set(set_angles, folder_path, view_name=set_name, resize=[256, 256], save_png=True)
+	@classmethod
+	def generate_data(cls, mesh_dirs, image_set_definitions, job_id=None, active_jobs=None, n_processes=-1):
+		if n_processes < 0:
+			n_processes = multiprocessing.cpu_count()
 
-	return True
+		start_time = time.time()
+		pool = multiprocessing.Pool(processes=n_processes)
 
-successful = []
-unsuccessful = []
+		successful = []
+		unsuccessful = []
 
-def add_successful(result):
-	successful.append(result)
+		def add_successful(result):
+			successful.append(result)
+			if active_jobs is not None and job_id is not None:
+				active_jobs.report_item_completed(job_id)
 
-def add_unsuccessful(result):
-	unsuccessful.append(result)
+		def add_unsuccessful(result):
+			unsuccessful.append(result)
+			if active_jobs is not None and job_id is not None:
+				active_jobs.report_item_failed(job_id)
 
-def make_images(mesh_dirs, image_set_definitions, n_processes=-1):
-	if n_processes < 0:
-		n_processes = multiprocessing.cpu_count()
+		jobs = [
+				pool.apply_async(
+					cls.make_images, 
+					kwds={"folder_path": path, "image_set_definitions": image_set_definitions, "overwrite": True}, 
+					callback=add_successful, 
+					error_callback=add_unsuccessful
+				)
+				for path 
+				in mesh_dirs
+			]
 
-	start_time = time.time()
-	pool = multiprocessing.Pool(processes=n_processes)
+		pool.close()
+		result_list_tqdm = []
+		for job in tqdm(jobs):
+			result_list_tqdm.append(job.get())
+		pool.join()
 
-	jobs = [
-		pool.apply_async(
-			make_images, 
-			kwds={"folder_path": path, "seed": idx, "overwrite": True}, 
-			callback=add_successful, 
-			error_callback=add_unsuccessful
-			) for idx, path in enumerate(mesh_dirs)
-		]
-		
-	pool.close()
-	result_list_tqdm = []
-	for job in tqdm(jobs):
-		result_list_tqdm.append(job.get())
-	pool.join()
+		elapsed_time = time.time() - start_time
 
-	elapsed_time = time.time() - start_time
-
-	return successful, unsuccessful, elapsed_time
+		return successful, unsuccessful, elapsed_time
 
 if __name__ == "__main__":
 	root_dir = Path("/data")
@@ -262,7 +292,7 @@ if __name__ == "__main__":
 		"random": random_set,
 	}
 
-	successful, unsuccessful, elapsed_time = make_images(mesh_dirs, image_set_definitions)
+	successful, unsuccessful, elapsed_time = RenderEngine.generate_data(mesh_dirs, image_sets)
 
 	if len(unsuccessful) > 0:
 		print("ALERT: Some jobs finished unsuccessfully.")
@@ -271,4 +301,4 @@ if __name__ == "__main__":
 	elif len(successful) == 50:
 		print("All jobs finished successfully.")
 	
-	print("--- %s seconds ---" % (time.time() - start_time))
+	print(f"--- {elapsed_time} seconds ---")
