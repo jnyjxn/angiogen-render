@@ -142,6 +142,7 @@ RUN cp /external/gvxr/install/gvxrWrapper-1.0.1/python3/* .
 
 RUN apt-get install -y xvfb
 RUN pip install scikit-image tqdm fastapi "uvicorn[standard]"
+RUN pip install pyyaml
 
 COPY angiogen .
 

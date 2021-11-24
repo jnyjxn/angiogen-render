@@ -135,8 +135,8 @@ class XRayRenderer(_Renderer):
 
 	def add_mesh(self, stl_filepath, element="I"):
 		# TODO: Figure out why of the below two lines, one works on some meshes and the other on others
-		self.gvxr.loadSceneGraph(stl_filepath, "mm")
-		# self.gvxr.loadMeshFile("Exported", stl_filepath, "mm")
+		# self.gvxr.loadSceneGraph(stl_filepath, "mm")
+		self.gvxr.loadMeshFile("Exported", stl_filepath, "mm")
 		self.gvxr.setElement("Exported", element)
 	
 	def deformMesh(self, xx=1, yy=1, zz=1, yx=0, zx=0, xy=0, zy=0, xz=0, yz=0):
@@ -146,7 +146,7 @@ class XRayRenderer(_Renderer):
 	def resetMesh(self):
 		self.gvxr.setNodeTransformationMatrix("Exported", [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
 	
-	def save_image_set(self, angles_sequence, save_dir, view_name, save_png=False, resize=None):
+	def save_image_set(self, angles_sequence, save_dir, view_name, file_suffix="", save_png=False, resize=None):
 		self.centre_table()
 
 		new_width = None
@@ -184,19 +184,19 @@ class XRayRenderer(_Renderer):
 			
 			imageset[:, :, i] = image
 
-		np.save(save_dir / f"{view_name}.npy", imageset)
+		np.save(save_dir / f"{view_name}{file_suffix}.npy", imageset)
 
 		return True
 
 class RenderEngine:
 	@staticmethod
-	def make_images(folder_path, image_set_definitions, overwrite=False):
-		if not overwrite and all([(folder_path / f"{name}.npy").exists() for name in image_set_definitions]):
+	def make_images(folder_path, image_set_definitions, file_suffix="", camera_config=None, debug=False, overwrite=False, save_png=False, resize=None):
+		if not overwrite and all([(folder_path / f"{name}{file_suffix}.npy").exists() for name in image_set_definitions]):
 			return True
 
-		t1 = time.time()
-		r = XRayRenderer(debug=True)
-		t2 = time.time()
+		# t1 = time.time()
+		r = XRayRenderer(debug=debug)
+		# t2 = time.time()
 
 		meshes_and_their_chemical_elements = {
 			"mesh.stl": "I",
@@ -206,25 +206,37 @@ class RenderEngine:
 			# "joined.stl": "I"
 		}
 
-		t3 = time.time()
+		# t3 = time.time()
 		for mesh_filepath, element in meshes_and_their_chemical_elements.items():
 			r.add_mesh(str(folder_path / mesh_filepath), element)
 		
-		t4 = time.time()
+		# t4 = time.time()
 		for set_name, set_angles in image_set_definitions.items():
-			r.save_image_set(set_angles, folder_path, view_name=set_name, resize=[1024, 1024], save_png=True)
+			r.save_image_set(set_angles, folder_path, view_name=set_name, file_suffix=file_suffix, resize=resize, save_png=save_png)
 
-		t5 = time.time()
+		# t5 = time.time()
 
-		print(f"Time to load scene graph: {t2-t1}")
-		print(f"Time to add meshes: {t4-t3}")
-		print(f"Time to save images: {t5-t4}")
+		# print(f"Time to load scene graph: {t2-t1}")
+		# print(f"Time to add meshes: {t4-t3}")
+		# print(f"Time to save images: {t5-t4}")
 
 
 		return True
 
 	@classmethod
-	def generate_data(cls, mesh_dirs, image_set_definitions, job_id=None, active_jobs=None, n_processes=-1):
+	def generate_data(cls, 
+			mesh_dirs, 
+			image_set_definitions,
+			file_suffix="",
+			n_processes=-1,
+			camera_config=None,
+			debug=False, 
+			overwrite=False, 
+			save_png=False, 
+			resize=None,
+			job_id=None, 
+			active_jobs=None,
+		):
 		if n_processes < 0:
 			n_processes = multiprocessing.cpu_count()
 
@@ -247,7 +259,16 @@ class RenderEngine:
 		jobs = [
 				pool.apply_async(
 					cls.make_images, 
-					kwds={"folder_path": path, "image_set_definitions": image_set_definitions, "overwrite": True}, 
+					kwds={
+						"folder_path": path, 
+						"image_set_definitions": image_set_definitions, 
+						"file_suffix": file_suffix,
+						"camera_config": camera_config,
+						"debug": debug, 
+						"overwrite": overwrite, 
+						"save_png": save_png, 
+						"resize": resize
+					}, 
 					callback=add_successful, 
 					error_callback=add_unsuccessful
 				)

@@ -1,4 +1,5 @@
 import time
+import yaml
 import numpy as np
 
 from tqdm import tqdm
@@ -15,11 +16,26 @@ from pydantic import BaseModel
 from entities.render import RenderEngine
 from entities.jobs import ActiveJobs
 
+def get_camera_params_from_yaml(yaml_path: Path) -> Dict:
+	with open(yaml_path, "r") as f:
+		yaml_dict = yaml.load(f, Loader=yaml.SafeLoader)
+
+		for item in ['SID', 'beam_energy', 'pixel_size', 'image_size']:
+			if item not in yaml_dict:
+				raise Exception(f"Missing {item} in {yaml_path}")
+
+		return yaml_dict
+
+active_jobs = ActiveJobs()
+app = FastAPI()
+
+default_camera_params = get_camera_params_from_yaml(Path("config/camera.yaml"))
+
 class AngioConfig(BaseModel):
-	SID: int
-	beam_energy: float
-	pixel_size: Tuple[float, float]
-	image_size: Tuple[int, int]
+	SID: Optional[int] = default_camera_params['SID']
+	beam_energy: Optional[float] = default_camera_params['beam_energy']
+	pixel_size: Optional[Tuple[float, float]] = default_camera_params['pixel_size']
+	image_size: Optional[Tuple[int, int]] = default_camera_params['image_size']
 
 class AngleSet(BaseModel):
 	name: str
@@ -28,10 +44,12 @@ class AngleSet(BaseModel):
 class RenderRequest(BaseModel):
 	angle_sets: Sequence[AngleSet]
 	file_suffix: Optional[str] = ""
-	config: Optional[AngioConfig]
-
-active_jobs = ActiveJobs()
-app = FastAPI()
+	debug: Optional[bool] = False
+	resize: Optional[Sequence[int]] = None
+	overwrite: Optional[bool] = False
+	save_png: Optional[bool] = False
+	n_processes: Optional[int] = 4
+	camera_params: Optional[AngioConfig] = None
 
 async def do_render_request(render_request: RenderRequest, job_id: str):
 	root_dir = Path("/data")
@@ -44,7 +62,22 @@ async def do_render_request(render_request: RenderRequest, job_id: str):
 		angle_sets[angle_set.name] = angle_set.angles
 
 	active_jobs.add_job(job_id, len(mesh_dirs))
-	_, _, time_taken = await run_in_threadpool(lambda: RenderEngine.generate_data(mesh_dirs, angle_sets, job_id=job_id, active_jobs=active_jobs, n_processes=12))
+
+	_, _, time_taken = await run_in_threadpool(
+		lambda: RenderEngine.generate_data(
+			mesh_dirs, 
+			angle_sets, 
+			file_suffix=render_request.file_suffix,
+			n_processes=render_request.n_processes,
+			camera_config=render_request.camera_params,
+			debug=render_request.debug, 
+			overwrite=render_request.overwrite, 
+			save_png=render_request.save_png,
+			resize=render_request.resize,
+			job_id=job_id, 
+			active_jobs=active_jobs, 
+		)
+	)
 
 	await active_jobs.report_job_completed_and_notify(job_id, time_taken)
 
