@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 import multiprocessing
 from pathlib import Path
-from typing import Optional, Sequence, Tuple, Dict
+from typing import Optional, Sequence, Tuple, Dict, Union
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.concurrency import run_in_threadpool
@@ -42,17 +42,20 @@ class AngleSet(BaseModel):
 	angles: Sequence[Tuple[float, float]]
 
 class RenderRequest(BaseModel):
+	root_folder: Optional[Union[Path, str]] = ""
 	angle_sets: Sequence[AngleSet]
 	file_suffix: Optional[str] = ""
 	debug: Optional[bool] = False
-	resize: Optional[Sequence[int]] = None
+	resize_to: Optional[Sequence[int]] = None
 	overwrite: Optional[bool] = False
 	save_png: Optional[bool] = False
+	save_npz: Optional[bool] = True
+	compress: Optional[bool] = True
 	n_processes: Optional[int] = 4
 	camera_params: Optional[AngioConfig] = None
 
 async def do_render_request(render_request: RenderRequest, job_id: str):
-	root_dir = Path("/data")
+	root_dir = Path(f"/data/{render_request.root_folder}")
 	
 	meshes = sorted(root_dir.rglob("**/mesh.stl"))
 	mesh_dirs = list(set([mesh.parents[0] for mesh in meshes]))
@@ -73,7 +76,9 @@ async def do_render_request(render_request: RenderRequest, job_id: str):
 			debug=render_request.debug, 
 			overwrite=render_request.overwrite, 
 			save_png=render_request.save_png,
-			resize=render_request.resize,
+			save_npz=render_request.save_npz,
+			compress=render_request.compress,
+			resize_to=render_request.resize_to,
 			job_id=job_id, 
 			active_jobs=active_jobs, 
 		)

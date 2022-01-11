@@ -42,6 +42,31 @@ class _Renderer(object):
 			image_dims=self.image_size
 		)
 
+class ImageCollection(object):
+	def __init__(self):
+		self.image_set = {}
+	
+	def add_image(self, image_name, image_data):
+		self.image_set[image_name] = image_data
+	
+	def save_pngs(self, path, root_filename):
+		for image_name, image_data in self.image_set.items():
+			rgb_image = np.dstack([image_data] * 3)
+			im = Image.fromarray(rgb_image.astype(np.uint8))
+			im.save(path / f"{root_filename}_{image_name}.png")
+
+	def save(self, path, filename, save_npz=False, save_png=False, compress=True):
+		if save_npz:
+			if compress:
+				np.savez_compressed(path / filename, **self.image_set)
+			else:
+				np.savez(path / filename, **self.image_set)
+		else:
+			np.save(path / filename, np.dstack(list(self.image_set.values())))
+		
+		if save_png:
+			self.save_pngs(path, filename)
+
 class XRayRenderer(_Renderer):
 	def __init__(self, SID=1040, beam_energy=150, pixel_size=(0.25, 0.25), image_size=(1526, 1496), debug=False):
 		super().__init__(SID, beam_energy, pixel_size, image_size)
@@ -83,12 +108,13 @@ class XRayRenderer(_Renderer):
 		self.gvxr.disableArtefactFiltering()
 
 	def _redirect_output(self):
-		self._devnull = open(os.devnull, 'w')
+		pass
+		# self._devnull = open(os.devnull, 'w')
 
-		self._orig_stdout_fno = os.dup(sys.stdout.fileno())
-		self._orig_stderr_fno = os.dup(sys.stderr.fileno())
-		os.dup2(self._devnull.fileno(), 1)
-		os.dup2(self._devnull.fileno(), 2)
+		# self._orig_stdout_fno = os.dup(sys.stdout.fileno())
+		# self._orig_stderr_fno = os.dup(sys.stderr.fileno())
+		# os.dup2(self._devnull.fileno(), 1)
+		# os.dup2(self._devnull.fileno(), 2)
 
 	def _restore_output(self):
 		os.dup2(self._orig_stdout_fno, 1)  # restore stdout
@@ -134,11 +160,10 @@ class XRayRenderer(_Renderer):
 		self.gvxr.translateScene(delta_table_x, delta_table_y, delta_table_z, "mm")
 
 	def add_mesh(self, stl_filepath, element="I"):
-		# TODO: Figure out why of the below two lines, one works on some meshes and the other on others
-		# self.gvxr.loadSceneGraph(stl_filepath, "mm")
+		# Note that the below does not work if the file is a Scene rather than a Mesh
 		self.gvxr.loadMeshFile("Exported", stl_filepath, "mm")
 		self.gvxr.setElement("Exported", element)
-	
+
 	def deformMesh(self, xx=1, yy=1, zz=1, yx=0, zx=0, xy=0, zy=0, xz=0, yz=0):
 		self.gvxr.shearNode("Exported", yx, zx, xy, zy, xz, yz)
 		self.gvxr.scaleNode("Exported", xx, yy, zz, "mm")
@@ -146,57 +171,49 @@ class XRayRenderer(_Renderer):
 	def resetMesh(self):
 		self.gvxr.setNodeTransformationMatrix("Exported", [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
 	
-	def save_image_set(self, angles_sequence, save_dir, view_name, file_suffix="", save_png=False, resize=None):
+	def save_image_set(self, angles_sequence, save_dir, view_name, file_suffix="", save_png=False, save_npz=True, compress=True, resize_to=None):
 		self.centre_table()
 
-		new_width = None
-		new_height = None
-		if resize is not None:
-			assert isinstance(resize, list) and len(resize) == 2, "If given, resize must be specified as [width, height]"
-			new_width, new_height = resize
-
-		imageset = None
+		images_output = ImageCollection()
 		for i, (ppa, psa) in enumerate(angles_sequence):
 			self.orient_fluoroscope(ppa, psa)
 			image, _ = self.get_image()
 
-			if resize is not None:
-				min_before = image[np.nonzero(image)].min()
-				image_max_before = image.max()
-				image = sk_resize(image, (new_height, new_width), order=3)
-				image_max_after = image.max()
-				image *= image_max_before/image_max_after
+			if resize_to is not None:
+				image = self.resize_image(image, resize_to=resize_to)
 
-				image[image < min_before] = 0
+			images_output.add_image(f"{ppa:.1f}_{psa:.1f}", image)
 
-			if save_png:
-				rgb_image = np.zeros((image.shape[0], image.shape[1], 3))
-				rgb_image[:, :, 0] = image
-				rgb_image[:, :, 1] = image
-				rgb_image[:, :, 2] = image
-
-				im = Image.fromarray(rgb_image.astype(np.uint8))
-
-				im.save(save_dir / f"{view_name}_{ppa}_{psa}.png")
-
-			if imageset is None:
-				imageset = np.zeros((image.shape[0], image.shape[1], len(angles_sequence)), dtype=np.uint8)
-			
-			imageset[:, :, i] = image
-
-		np.save(save_dir / f"{view_name}{file_suffix}.npy", imageset)
+		images_output.save(save_dir, f"{view_name}{file_suffix}", save_npz=save_npz, save_png=save_png, compress=compress)
 
 		return True
+	
+	@staticmethod
+	def resize_image(image, resize_to, order=3):
+		assert isinstance(resize_to, list) and len(resize_to) == 2, "Resize must be specified as [width, height]"
+		new_width, new_height = resize_to
+
+		min_before = image[np.nonzero(image)].min()
+		image_max_before = image.max()
+		image = sk_resize(image, (new_height, new_width), order=order)
+		image_max_after = image.max()
+		image *= image_max_before/image_max_after
+
+		image[image < min_before] = 0
+
+		return image
 
 class RenderEngine:
 	@staticmethod
-	def make_images(folder_path, image_set_definitions, file_suffix="", camera_config=None, debug=False, overwrite=False, save_png=False, resize=None):
-		if not overwrite and all([(folder_path / f"{name}{file_suffix}.npy").exists() for name in image_set_definitions]):
+	def make_images(folder_path, image_set_definitions, file_suffix="", camera_config=None, debug=False, overwrite=False, save_png=False, save_npz=True, compress=True, resize_to=None):
+		print(f"\nMaking images for {folder_path}")
+		file_extension = "npz" if save_npz else "npy"
+		if not overwrite and all([(folder_path / f"{name}{file_suffix}.{file_extension}").exists() for name in image_set_definitions]):
 			return True
-
-		# t1 = time.time()
+		
+		t1 = time.time()
 		r = XRayRenderer(debug=debug)
-		# t2 = time.time()
+		t2 = time.time()
 
 		meshes_and_their_chemical_elements = {
 			"mesh.stl": "I",
@@ -206,19 +223,19 @@ class RenderEngine:
 			# "joined.stl": "I"
 		}
 
-		# t3 = time.time()
+		t3 = time.time()
 		for mesh_filepath, element in meshes_and_their_chemical_elements.items():
 			r.add_mesh(str(folder_path / mesh_filepath), element)
 		
-		# t4 = time.time()
+		t4 = time.time()
 		for set_name, set_angles in image_set_definitions.items():
-			r.save_image_set(set_angles, folder_path, view_name=set_name, file_suffix=file_suffix, resize=resize, save_png=save_png)
+			r.save_image_set(set_angles, folder_path, view_name=set_name, file_suffix=file_suffix, resize_to=resize_to, save_png=save_png, save_npz=save_npz, compress=compress)
 
-		# t5 = time.time()
+		t5 = time.time()
 
-		# print(f"Time to load scene graph: {t2-t1}")
-		# print(f"Time to add meshes: {t4-t3}")
-		# print(f"Time to save images: {t5-t4}")
+		print(f"Time to load scene graph: {t2-t1}")
+		print(f"Time to add meshes: {t4-t3}")
+		print(f"Time to save images: {t5-t4}")
 
 
 		return True
@@ -233,13 +250,15 @@ class RenderEngine:
 			debug=False, 
 			overwrite=False, 
 			save_png=False, 
-			resize=None,
+			save_npz=True, 
+			compress=True,
+			resize_to=None,
 			job_id=None, 
 			active_jobs=None,
 		):
 		if n_processes < 0:
 			n_processes = multiprocessing.cpu_count()
-
+		
 		start_time = time.time()
 		pool = multiprocessing.Pool(processes=n_processes)
 
@@ -256,6 +275,7 @@ class RenderEngine:
 			if active_jobs is not None and job_id is not None:
 				active_jobs.report_item_failed(job_id)
 
+		print(f"\nGenerating images for {len(mesh_dirs)} meshes")
 		jobs = [
 				pool.apply_async(
 					cls.make_images, 
@@ -267,7 +287,9 @@ class RenderEngine:
 						"debug": debug, 
 						"overwrite": overwrite, 
 						"save_png": save_png, 
-						"resize": resize
+						"save_npz": save_npz,
+						"compress": compress,
+						"resize_to": resize_to
 					}, 
 					callback=add_successful, 
 					error_callback=add_unsuccessful
@@ -286,40 +308,3 @@ class RenderEngine:
 
 		return successful, unsuccessful, elapsed_time
 
-if __name__ == "__main__":
-	root_dir = Path("/data")
-	
-	meshes = sorted(root_dir.rglob("**/mesh.stl"))
-	mesh_dirs = [mesh.parents[0] for mesh in meshes]
-
-	seed = 10000
-	rng = np.random.default_rng(seed)
-
-	orthogonal_set = [
-		(0, 0),
-		(0, 90),
-		(90, 0)
-	]
-
-	random_set = []
-	for i in range(3):  
-		theta = 360*rng.random()
-		phi = 180*np.arccos(2*rng.random()-1.0)/np.pi
-
-		random_set += [(theta, phi)]
-	
-	image_sets = {
-		"orthogonal": orthogonal_set,
-		"random": random_set,
-	}
-
-	successful, unsuccessful, elapsed_time = RenderEngine.generate_data(mesh_dirs, image_sets)
-
-	if len(unsuccessful) > 0:
-		print("ALERT: Some jobs finished unsuccessfully.")
-		for item in unsuccessful:
-			print(item)
-	elif len(successful) == 50:
-		print("All jobs finished successfully.")
-	
-	print(f"--- {elapsed_time} seconds ---")

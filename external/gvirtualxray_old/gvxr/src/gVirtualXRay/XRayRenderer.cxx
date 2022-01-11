@@ -169,6 +169,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "mu_water.csv.h"
 
+#include <iostream>
+#include <fstream>
 
 //******************************************************************************
 //	define
@@ -1512,7 +1514,10 @@ void XRayRenderer::create2DTexture(GLuint* apTextureID,
 
 	GLint width(0);
 	glTexImage2D(GL_PROXY_TEXTURE_2D, 0, anInternalTextureFormat, m_p_detector->getNumberOfPixels().getX(), m_p_detector->getNumberOfPixels().getY(), 0, aType, GL_FLOAT, 0);
+	
+	// This is not successfully filling a value for width
 	glGetTexLevelParameteriv(GL_PROXY_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+
 	if ((unsigned int)(width) == m_p_detector->getNumberOfPixels().getX())
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, anInternalTextureFormat, m_p_detector->getNumberOfPixels().getX(), m_p_detector->getNumberOfPixels().getY(), 0, aType, GL_FLOAT, 0);

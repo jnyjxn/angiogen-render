@@ -1,22 +1,10 @@
-FROM nvidia/cuda:11.4.2-base-ubuntu20.04
+FROM nvidia/cuda:11.4.2-devel-ubuntu20.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
-    cmake \
     wget \
-    curl \
     git \
-    rsync \
-    sudo \
-    zip \ 
-    vim \
-    ssh \
-    unzip \
-    screen \
-    openssh-server \
-    pkg-config \
-    unrar \
-    build-essential \
+    curl \
     freeglut3-dev \
     libatlas-base-dev \
     libboost-all-dev \
@@ -130,12 +118,12 @@ RUN cmake \
         -S /external/gvxr/src \
         -B $PWD
 
-RUN make -j32
+RUN make -j48
 
 ENV EGL_PLATFORM=x11
 
 ENV NVIDIA_VISIBLE_DEVICES=all
-ENV NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute
+ENV NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute,display
 
 WORKDIR /angiogen
 RUN cp /external/gvxr/install/gvxrWrapper-1.0.1/python3/* .
@@ -146,4 +134,6 @@ RUN pip install pyyaml
 
 COPY angiogen .
 
-CMD xvfb-run uvicorn server:app --host 0.0.0.0 --port 80
+CMD python main.py
+# CMD uvicorn server:app --host 0.0.0.0 --port 80
+# CMD xvfb-run uvicorn server:app --host 0.0.0.0 --port 80
