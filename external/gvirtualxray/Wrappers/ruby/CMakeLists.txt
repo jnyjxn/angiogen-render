@@ -22,10 +22,6 @@ set_property(
 
 swig_link_libraries(${module} ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES})
 
-IF (USE_SUPERBUILD)
-    ADD_DEPENDENCIES(${module} SimpleGVXR)
-ENDIF ()
-
 configure_file(test.rb.in ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/test.rb)
 FILE(COPY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/test.rb
 		DESTINATION ${CMAKE_CURRENT_BINARY_DIR}

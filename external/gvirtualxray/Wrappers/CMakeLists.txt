@@ -90,45 +90,60 @@ if (BUILD_TESTING)
 endif()
 
 
+# for superbuild ###############################################################
+IF (NOT USE_SYSTEM_SimpleGVXR)
+		SET (USE_SUPERBUILD ON)
+		INCLUDE(ExternalProject)
+ENDIF (NOT USE_SYSTEM_SimpleGVXR)
+
+
 # Find SimpleGVXR ############################################################
-IF (NOT USE_SUPERBUILD)
-    IF (NOT USE_SYSTEM_SimpleGVXR)
-    		SET (USE_SUPERBUILD ON)
-    		INCLUDE(ExternalProject)
-    ENDIF (NOT USE_SYSTEM_SimpleGVXR)
+#[[IF (NOT USE_SYSTEM_SimpleGVXR)
 
+		#INCLUDE(cmake/Build_SimpleGVXR.cmake)
+		#build_SimpleGVXR( SimpleGVXR ${PROJECT_BINARY_DIR} )
+
+
+		message(STATUS ${CMAKE_SOURCE_DIR}/cmake/SimpleGVXR)
+		# The first external project will be built at *configure stage*
+		file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/SimpleGVXR)
+
+		execute_process(
+		    COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}/cmake/SimpleGVXR -DUSE_SYSTEM_gVirtualXRay:BOOL=ON
+		    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/SimpleGVXR
+				RESULT_VARIABLE gvxr_config_result
+				)
+
+		message(STATUS "SimpleGVXR config result: ${gvxr_config_result}")
+
+
+    IF (MSVC)
+    		execute_process(
+    		    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/SimpleGVXR --target SimpleGVXR
+    		    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/SimpleGVXR
+    				RESULT_VARIABLE gvxr_build_result
+    				)
+    ELSE (MSVC)
+        execute_process(
+    		    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/SimpleGVXR --target SimpleGVXR -- -j12
+    		    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/SimpleGVXR
+    				RESULT_VARIABLE gvxr_build_result
+    				)
+    ENDIF (MSVC)
+
+				message(STATUS "SimpleGVXR build result: ${gvxr_build_result}")
+
+    SET (gVirtualXRay_DIR ${CMAKE_BINARY_DIR}/SimpleGVXR/build/gVirtualXRay/install/gVirtualXRay-1.1.0)
+		SET (SimpleGVXR_DIR ${CMAKE_BINARY_DIR}/SimpleGVXR/install/SimpleGVXR-1.0.0)
+		message(STATUS "SimpleGVXR install: ${gVirtualXRay_DIR}")
+
+ENDIF (NOT USE_SYSTEM_SimpleGVXR)]]
+
+IF (NOT BUILD_ALL_GVXR)
     FIND_PACKAGE(SimpleGVXR REQUIRED)
-    INCLUDE(${SimpleGVXR_USE_FILE})
-ELSE ()
-
-    # C++ version
-    set (CMAKE_CXX_STANDARD "${gVirtualXRay_CMAKE_CXX_STANDARD}")
-
-    # C++ flags
-    SET(CMAKE_C_FLAGS   "${gVirtualXRay_CMAKE_C_FLAGS}")
-    SET(CMAKE_CXX_FLAGS "${gVirtualXRay_CMAKE_CXX_FLAGS}")
-
-    # Add include directories needed to use SimpleGVXR
-    include_directories(${gVirtualXRay_INCLUDE_DIR})
-    include_directories(${gVirtualXRay_INCLUDE_DIRS})
-    include_directories(${SimpleGVXR_INCLUDE_DIR})
-
-    # Add link directories needed to use SimpleGVXR
-    link_directories(${gVirtualXRay_LIBRARY_DIRS})
+    include(${SimpleGVXR_USE_FILE})
 ENDIF ()
 
-
-# OpenMP ######################################################################
-FIND_PACKAGE(OpenMP)
-
-IF (OPENMP_FOUND)
-
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}"  PARENT_SCOPE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}"  PARENT_SCOPE)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}"  PARENT_SCOPE)
-
-    SET (optionalLibs ${optionalLibs} OpenMP::OpenMP_CXX  PARENT_SCOPE)
-ENDIF (OPENMP_FOUND)
 
 
 # SWIG ########################################################################
@@ -157,10 +172,10 @@ IF (NOT SWIG_FOUND)
     ENDIF (WIN32)
 ELSE (NOT SWIG_FOUND)
 
-    string(COMPARE LESS "${SWIG_VERSION}" "3.0.0" SWIG_VERSION_ERROR)
-
+    string(COMPARE LESS "${SWIG_VERSION}" "4.0.0" SWIG_VERSION_ERROR)
+	
     if(SWIG_VERSION_ERROR)
-	MESSAGE(FATAL_ERROR "Swig version must be 3.0.0 or greater! (You have ${SWIG_VERSION})")
+	MESSAGE(FATAL_ERROR "Swig version must be 4.0.0 or greater! (You have ${SWIG_VERSION})")
     ENDIF ()
 ENDIF (NOT SWIG_FOUND)
 
@@ -169,11 +184,6 @@ file(WRITE
     ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/runAll.sh
     "echo Run all the tests.\n"
 )
-
-
-# OpenGL ######################################################################
-FIND_PACKAGE(OpenGL REQUIRED COMPONENTS OpenGL)
-FIND_PACKAGE(OpenGL COMPONENTS GLX EGL)
 
 
 # SWIG has been found

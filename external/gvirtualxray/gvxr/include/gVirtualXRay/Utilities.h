@@ -338,20 +338,6 @@ template<typename T> T radianToDegree(const T& aAngleInRadian);
 template <typename T> int sgn(const T& aValue);
 
 
-double interpolate(const double& a_low,
-    const double& a_high,
-    const double& a0,
-    const double& b_low,
-    const double& b_high);
-
-
-float interpolate(const float& a_low,
-    const float& a_high,
-    const float& a0,
-    const float& b_low,
-    const float& b_high);
-
-
 } // namespace gVirtualXRay
 
 

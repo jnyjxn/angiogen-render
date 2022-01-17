@@ -83,21 +83,12 @@ namespace gVirtualXRay {
 
 
 //******************************************************************************
-//  Class/type declaration
+//  Class declaration
 //******************************************************************************
 template<typename T> class Image;
 template<typename T> class FFT;
 template<typename T> class Sinogram;
 class PolygonMesh;
-
-// This is needed for MacOS
-#ifndef TIFF_UINT16_T
-#define TIFF_UINT16_T unsigned short
-#endif
-
-#ifndef TIFF_UINT32_T
-#define TIFF_UINT32_T unsigned int
-#endif
 
 
 //******************************************************************************
@@ -129,8 +120,6 @@ std::string getPixelType(const std::string& aFileName);
 
 
 std::string getPixelType(const char* aFileName);
-
-
 
 
 //==============================================================================

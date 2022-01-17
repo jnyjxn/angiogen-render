@@ -75,8 +75,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include <memory>
-#include <vector> // To store the energy response
-#include <utility> // To create STL pairs
 
 #ifndef TYPES_H
 #include "gVirtualXRay/Types.h"
@@ -454,34 +452,6 @@ public:
     const VEC2& getPixelSizeInUnitOfLength() const;
 
 
-    //--------------------------------------------------------------------------
-    /// Clear the energy response of the detector.
-    //--------------------------------------------------------------------------
-    void clearEnergyResponse();
-
-
-    //--------------------------------------------------------------------------
-    /// Load the energy response of the detector from a TSV file.
-    /**
-     *  @param aFileName: name of the file. Each line of the file is formatted as follows:
-     *                    input_energy  output_energy
-     *  @param aUnitOfEnergy: the unit of energy corresponding to the data in the file
-     */
-    //--------------------------------------------------------------------------
-    void loadEnergyResponse(const std::string& aFileName,
-        const RATIONAL_NUMBER& aUnitOfEnergy);
-
-
-    //--------------------------------------------------------------------------
-    /// Apply the energy response if any.
-    /**
-    *  @param aUnitOfEnergy: the input energy
-    *  @return the output energy
-     */
-    //--------------------------------------------------------------------------
-    RATIONAL_NUMBER applyEnergyResponse(const RATIONAL_NUMBER& anEnergy) const;
-
-
 //******************************************************************************
 protected:
     //--------------------------------------------------------------------------
@@ -524,15 +494,6 @@ protected:
     /// Update the view along the Y-axis.
     //--------------------------------------------------------------------------
     void updateFOVY();
-
-
-    //--------------------------------------------------------------------------
-    /// Find the index of the closest input energy in the energy response.
-    /**
-    *  @return the index of the closest input energy
-    */
-    //--------------------------------------------------------------------------
-    int findNearestEnergyIdx(const RATIONAL_NUMBER& anEnergy) const;
 
 
      /// The position of the detector centre
@@ -638,10 +599,6 @@ protected:
 
     /// Field of view along the Y-axis
     RATIONAL_NUMBER m_fovy;
-
-
-    /// Energy response. The keys of the map are the input energies
-    std::vector<std::pair<RATIONAL_NUMBER, RATIONAL_NUMBER> > m_energy_response;
 };
 
 

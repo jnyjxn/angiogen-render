@@ -40,17 +40,11 @@
 #include "bump_map_generation_gl3.vert.h"
 #include "bump_map_generation_gl3.frag.h"
 
-#include "bump_map_generation_gl4.vert.h"
-#include "bump_map_generation_gl4.frag.h"
-
 #include "3d_bump_map_generation_gl2.vert.h"
 #include "3d_bump_map_generation_gl2.frag.h"
 
 #include "3d_bump_map_generation_gl3.vert.h"
 #include "3d_bump_map_generation_gl3.frag.h"
-
-#include "3d_bump_map_generation_gl4.vert.h"
-#include "3d_bump_map_generation_gl4.frag.h"
 
 
 //******************************************************************************
@@ -387,15 +381,8 @@ void InternalOrganMesh::load2DBumpShader()
     std::string fragment_shader;
 
     // Bump map generation shader
-    // Use OpenGL 4.5
-    if (useOpenGL45())
-    {
-        z_lib_return_code_vertex   = inflate(g_bump_map_generation_gl4_vert, sizeof(g_bump_map_generation_gl4_vert),   &p_vertex_shader);
-        z_lib_return_code_fragment = inflate(g_bump_map_generation_gl4_frag, sizeof(g_bump_map_generation_gl4_frag), &p_fragment_shader);
-        m_bump_map_shader.setLabels("bump_map_generation_gl3.vert", "bump_map_generation_gl3.frag");
-    }
-    // Use OpenGL 3.2
-    else if (useOpenGL32())
+    // Use OpenGL 3.x
+    if (useOpenGL3_2OrAbove())
     {
         z_lib_return_code_vertex   = inflate(g_bump_map_generation_gl3_vert, sizeof(g_bump_map_generation_gl3_vert),   &p_vertex_shader);
         z_lib_return_code_fragment = inflate(g_bump_map_generation_gl3_frag, sizeof(g_bump_map_generation_gl3_frag), &p_fragment_shader);
@@ -436,15 +423,8 @@ void InternalOrganMesh::load3DBumpShader()
     std::string fragment_shader;
 
     // Bump map generation shader
-    // Use OpenGL 4.5
-    if (useOpenGL45())
-    {
-        z_lib_return_code_vertex   = inflate(g_3d_bump_map_generation_gl3_vert, sizeof(g_3d_bump_map_generation_gl3_vert),   &p_vertex_shader);
-        z_lib_return_code_fragment = inflate(g_3d_bump_map_generation_gl3_frag, sizeof(g_3d_bump_map_generation_gl3_frag), &p_fragment_shader);
-        m_bump_map_shader.setLabels("3d_bump_map_generation_gl3.vert", "3d_bump_map_generation_gl3.frag");
-    }
-    // Use OpenGL 3.2
-    else if (useOpenGL32())
+    // Use OpenGL 3.x
+    if (useOpenGL3_2OrAbove())
     {
         z_lib_return_code_vertex   = inflate(g_3d_bump_map_generation_gl3_vert, sizeof(g_3d_bump_map_generation_gl3_vert),   &p_vertex_shader);
         z_lib_return_code_fragment = inflate(g_3d_bump_map_generation_gl3_frag, sizeof(g_3d_bump_map_generation_gl3_frag), &p_fragment_shader);

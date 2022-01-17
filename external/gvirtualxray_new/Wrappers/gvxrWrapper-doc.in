@@ -1,0 +1,30 @@
+%module @module@
+
+%{
+#define SWIG_FILE_WITH_INIT
+#define SWIG_PYTHON_CAST_MODE
+#include "SimpleGVXR.h"
+%}
+
+%include "std_vector.i"
+%include "std_string.i"
+//%include "@CMAKE_CURRENT_SOURCE_DIR@/../numpy.i"
+
+%include "@SimpleGVXR_DOC_I_FILE@"
+
+namespace std {
+    %template(Vectors) std::vector<std::string>;
+    %template(Vectori) std::vector<int>;
+    %template(Vectorui) std::vector<unsigned int>;
+    %template(Vectorss) vector<short>;
+    %template(Vectorf) std::vector<float>;
+    %template(Vectord) std::vector<double>;
+    %template(Vectorff) std::vector<vector<float> >;
+    %template(Vectordd) std::vector<vector<double> >;
+    %template(Vectorfff) std::vector<std::vector<vector<float> > >;
+    %template(Vectorddd) std::vector<std::vector<vector<double> > >;
+};
+
+
+// Process symbols in header
+%include "SimpleGVXR.h"

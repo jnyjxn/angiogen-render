@@ -30,12 +30,17 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+# Use C++ 11
+set(CMAKE_CXX_STANDARD 11) # C++11
+set(CMAKE_CXX_STANDARD_REQUIRED ON) # C++11 is required (I.e. not optional)
+set(CMAKE_CXX_EXTENSIONS OFF) # without compiler extensions like gnu++11
+
+
 
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL  "3.13.0")
     cmake_policy(SET CMP0075 NEW)
 endif()
 
-FIND_PACKAGE( Threads REQUIRED )
 
 
 
@@ -60,6 +65,8 @@ check_function_exists(pow HAVE_POW)
 check_function_exists(sqrt HAVE_SQRT)
 check_function_exists(abs HAVE_ABS)
 check_function_exists(cbrt HAVE_CBRT)
+
+
 
 
 # Valiation_02
@@ -111,28 +118,29 @@ IF (FFTW3_LIBRARIES)
     add_executable(SGVXR_TestFBP                     TestFBP.cxx)
 ENDIF()
 
+
 list(APPEND GTEST_LIBRARIES gtest gtest_main)
 separate_arguments(GTEST_LIBRARIES)
 
-target_link_libraries(SGVXR_TestDensity                     ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
-target_link_libraries(SGVXR_TestMassAttenuationCoefficients ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
+target_link_libraries(SGVXR_TestDensity                     ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
+target_link_libraries(SGVXR_TestMassAttenuationCoefficients ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
 
-target_link_libraries(SGVXR_TestCubeWithoutIndex            ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
-target_link_libraries(SGVXR_TestCubeWithIndex               ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
-target_link_libraries(SGVXR_TestLBuffer                     ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
-target_link_libraries(SGVXR_TestBeerLambertLawMonoChromatic ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
-target_link_libraries(SGVXR_TestBeerLambertLawPolyChromatic ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
-target_link_libraries(SGVXR_TestSinogramFromMesh            ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
-#target_link_libraries(SGVXR_TestSinogramFromVoxels          ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
-target_link_libraries(SGVXR_TestPointSource                 ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
-target_link_libraries(SGVXR_TestCubeSource                  ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
-target_link_libraries(SGVXR_TestUncenteredSource            ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
-#target_link_libraries(SGVXR_TestPhantomMonoChromatic        ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
-target_link_libraries(SGVXR_TestRadonTransformFromMesh      ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
-target_link_libraries(SGVXR_TestOrtho                      ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
+target_link_libraries(SGVXR_TestCubeWithoutIndex            ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
+target_link_libraries(SGVXR_TestCubeWithIndex               ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
+target_link_libraries(SGVXR_TestLBuffer                     ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
+target_link_libraries(SGVXR_TestBeerLambertLawMonoChromatic ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
+target_link_libraries(SGVXR_TestBeerLambertLawPolyChromatic ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
+target_link_libraries(SGVXR_TestSinogramFromMesh            ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
+#target_link_libraries(SGVXR_TestSinogramFromVoxels          ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
+target_link_libraries(SGVXR_TestPointSource                 ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
+target_link_libraries(SGVXR_TestCubeSource                  ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
+target_link_libraries(SGVXR_TestUncenteredSource            ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
+#target_link_libraries(SGVXR_TestPhantomMonoChromatic        ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
+target_link_libraries(SGVXR_TestRadonTransformFromMesh      ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
+target_link_libraries(SGVXR_TestOrtho                      ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
 
 IF (FFTW3_LIBRARIES)
-    target_link_libraries(SGVXR_TestFBP                     ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} ${GTEST_LIBRARIES} Threads::Threads)
+    target_link_libraries(SGVXR_TestFBP                     ${SimpleGVXR_LIBRARIES} ${optionalLibs} ${requiredLibs} "${GTEST_LIBRARIES}")
 ENDIF()
 
 # Add dependencies

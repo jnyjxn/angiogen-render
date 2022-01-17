@@ -53,7 +53,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <windows.h>
 #endif
 
-#define GLEW_EGL
 //#include <GL/glew.h>
 
 //#else // HAS_GLEW
@@ -77,9 +76,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define isinf(x) (!_finite(x))
 #endif
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
 #define gvxr_VERSION "gVirtualXRay core library (gvxr) @gVirtualXRay_VERSION_MAJOR@.@gVirtualXRay_VERSION_MINOR@.@gVirtualXRay_VERSION_PATCH@ (@TIMESTAMP@) [Compiler: @COMPILER@] on @CMAKE_SYSTEM_NAME@"
 

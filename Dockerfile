@@ -125,7 +125,7 @@ RUN cmake \
         -B $PWD
 
 RUN make -j48
-RUN make install
+# RUN make install
 
 ENV EGL_PLATFORM=x11
 
@@ -133,7 +133,7 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute,display
 
 WORKDIR /angiogen
-RUN cp /external/gvxr/install/gvxrWrapper-1.0.6/python3/* .
+RUN cp /external/gvxr/install/gvxrWrapper-1.0.1/python3/* .
 
 RUN pip install pydantic
 RUN pip install scikit-image tqdm 
@@ -149,6 +149,6 @@ ENV LIBGL_ALWAYS_INDIRECT=1
 # COPY external/gvirtualxray/Wrappers/welsh-dragon-small.stl /data
 
 # CMD nvidia-smi 
-# CMD python main.py
+CMD python main.py
 # CMD uvicorn server:app --host 0.0.0.0 --port 80
 # CMD xvfb-run uvicorn server:app --host 0.0.0.0 --port 80

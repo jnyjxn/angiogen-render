@@ -1506,11 +1506,7 @@ template<typename T> void Image<T>::loadUsingITK(const char* aFileName)
     m_spacing[2] = spacing[2];
 
     // Release the memory if needed
-    if (m_p_image)
-    {
-    	delete [] m_p_image;
-    	m_p_image = 0;
-	}
+    if (m_p_image) delete [] m_p_image;
 
     // Allocate the memory
     int number_of_pixels(m_width * m_height * m_number_of_slices);
@@ -1582,11 +1578,7 @@ template<typename T> void Image<T>::loadSeries(const char* aPattern,
     m_spacing[2] = spacing[2];
 
     // Release the memory if needed
-    if (m_p_image)
-    {
-    	delete [] m_p_image;
-    	m_p_image = 0;
-	}
+    if (m_p_image) delete [] m_p_image;
 
     // Allocate the memory
     int number_of_pixels(m_width * m_height * m_number_of_slices);
@@ -1653,11 +1645,7 @@ template<typename T> void Image<T>::loadDicomSeries(const char* aDirectory)
     m_spacing[2] = spacing[2];
 
     // Release the memory if needed
-    if (m_p_image)
-    {
-    	delete [] m_p_image;
-    	m_p_image = 0;
-	}
+    if (m_p_image) delete [] m_p_image;
 
     // Allocate the memory
     int number_of_pixels(m_width * m_height * m_number_of_slices);
@@ -2285,7 +2273,6 @@ template<typename T> void Image<T>::saveDCM(const char* aFileName,
         if( !writer.Write() )
             {
             delete [] p_temp;
-            p_temp = 0;
 
             std::string error_message("Could not write the DICOM file (");
             error_message += aFileName;
@@ -2293,7 +2280,6 @@ template<typename T> void Image<T>::saveDCM(const char* aFileName,
             throw Exception(__FILE__, __FUNCTION__, __LINE__, error_message);
             }
         delete [] p_temp;
-        p_temp = 0;
     }
 
 #else
@@ -2851,7 +2837,7 @@ template<typename T> double Image<T>::getVariance() const
     double average(getAverage());
 
 #ifdef NDEBUG
-    #pragma omp parallel for reduction( + : variance )
+    #pragma omp parallel reduction( + : variance )
 #endif
     for (unsigned int i = 0; i < m_width * m_height * m_number_of_slices; ++i)
         {
@@ -2882,9 +2868,9 @@ template<typename T> double Image<T>::computeSAE(const Image<T>& anImage) const
     double sae(0.0);
 
 #ifdef NDEBUG
-    #pragma omp parallel for reduction( + : sae )
+    #pragma omp parallel reduction( + : sae )
 #endif
-    for (int i = 0; i < m_width * m_height * m_number_of_slices; ++i)
+    for (unsigned int i(0); i < m_width * m_height * m_number_of_slices; ++i)
     {
         sae += std::abs(m_p_image[i] - anImage.m_p_image[i]);
     }
@@ -2914,9 +2900,9 @@ template<typename T> double Image<T>::computeSSE(const Image<T>& anImage) const
     double temp;
 
 #ifdef NDEBUG
-    #pragma omp parallel for reduction( + : sse ) private(temp)
+    #pragma omp parallel reduction( + : sse ) private(temp)
 #endif
-    for (int i = 0; i < m_width * m_height * m_number_of_slices; ++i)
+    for (unsigned int i(0); i < m_width * m_height * m_number_of_slices; ++i)
     {
         temp = m_p_image[i] - anImage.m_p_image[i];
         temp *= temp;
@@ -2960,9 +2946,9 @@ template<typename T> double Image<T>::computeNCC(const Image<T>& anImage) const
     double ncc(0.0);
 
 #ifdef NDEBUG
-    #pragma omp parallel for reduction( + : ncc )
+    #pragma omp parallel reduction( + : ncc )
 #endif
-    for (int i = 0; i < m_width * m_height * m_number_of_slices; ++i)
+    for (unsigned int i(0); i < m_width * m_height * m_number_of_slices; ++i)
     {
         ncc += (m_p_image[i] - average1) * (anImage.m_p_image[i] - average2);
     }
@@ -4202,7 +4188,7 @@ template<typename T> PolygonMesh Image<T>::marchingCubes(const T& aFirstTheshold
                 std::vector<float> p_combined_vertex_set;
                 std::vector<float> p_combined_normal_vector_set;
 
-                for (int i = 0; i < max_thread; ++i)
+                for (unsigned int i(0); i < max_thread; ++i)
                 {
                     p_combined_vertex_set.insert(p_combined_vertex_set.end(), p_vertex_set[i].begin(), p_vertex_set[i].end());
                     p_combined_normal_vector_set.insert(p_combined_normal_vector_set.end(), p_normal_vector_set[i].begin(), p_normal_vector_set[i].end());
@@ -4798,7 +4784,6 @@ template<typename T> void Image<T>::loadRAW(std::ifstream& anInputStream,
 
         // Release the compressed data
         delete [] p_temp_buffer;
-		p_temp_buffer = 0;
 
         // Keep the decompressed data
         p_temp_buffer = p_dest;

@@ -30,28 +30,37 @@ if use_matplotlib:
     plt.subplot(131)
 
 # Create an OpenGL context
-print("Create a Vulkan context")
-gvxr.createWindow(0, 1, "OPENGL");
+print("Create an OpenGL context")
+gvxr.createWindow();
 gvxr.setWindowSize(512, 512);
 
 
-# Set up the beam
-print("Set up the beam")
-gvxr.setSourcePosition(-40.0,  0.0, 0.0, "cm");
-gvxr.usePointSource();
-#gvxr.useParallelBeam();
-gvxr.setMonoChromatic(0.08, "MeV", 1000);
+# # Set up the beam
+# print("Set up the beam")
+# gvxr.setSourcePosition(-40.0,  0.0, 0.0, "cm");
+# gvxr.usePointSource();
+# #gvxr.useParallelBeam();
+# gvxr.setMonoChromatic(0.08, "MeV", 1000);
 
-# Set up the detector
-print("Set up the detector");
-gvxr.setDetectorPosition(10.0, 0.0, 0.0, "cm");
-gvxr.setDetectorUpVector(0, 0, -1);
-gvxr.setDetectorNumberOfPixels(640, 320);
-gvxr.setDetectorPixelSize(0.5, 0.5, "mm");
+# # Set up the detector
+# print("Set up the detector");
+# gvxr.setDetectorPosition(10.0, 0.0, 0.0, "cm");
+# gvxr.setDetectorUpVector(0, 0, -1);
+# gvxr.setDetectorNumberOfPixels(640, 320);
+# gvxr.setDetectorPixelSize(0.5, 0.5, "mm");
+
+gvxr.setSourcePosition(0.0, 0.5*1040, 0.0, "mm")
+gvxr.setDetectorPosition(0.0, -0.5*1040, 0.0, "mm")
+gvxr.usePointSource()
+gvxr.setMonoChromatic(int(150), "keV", 1000)
+gvxr.setDetectorUpVector(0, 0, -1)
+gvxr.setDetectorNumberOfPixels(1526, 1496)
+gvxr.setDetectorPixelSize(1, 1, "mm")
+gvxr.disableArtefactFiltering()
 
 # Load the data
 print("Load the data");
-gvxr.loadSceneGraph(dir_path + "/../data/welsh-dragon-small.stl", "mm");
+gvxr.loadSceneGraph("/data/pipes_A/00001/mesh.stl", "mm");
 
 # Process every node
 for i in range(gvxr.getNumberOfChildren('root')):

@@ -79,6 +79,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gtest/gtest.h"
 
+#define GLFW_INCLUDE_GLCOREARB 1
+#include <GLFW/glfw3.h>
+
 #ifndef __Types_h
 #include "gVirtualXRay/Types.h"
 #endif
@@ -127,10 +130,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gVirtualXRay/Exception.h"
 #endif
 
-#ifndef __Context_h
-#include "gVirtualXRay/Context.h"
-#endif
-
 
 //******************************************************************************
 //  Name space
@@ -142,7 +141,9 @@ using namespace gVirtualXRay;
 //******************************************************************************
 //  Global variables
 //******************************************************************************
-Context g_GL_context;
+GLsizei g_main_window_width(1280 / 2.0);
+GLsizei g_main_window_height(800 / 2.0);
+GLFWwindow* g_p_main_window_id(0);
 
 Matrix4x4<GLfloat> g_scene_rotation_matrix;
 Matrix4x4<GLfloat> g_detector_rotation_matrix;
@@ -194,15 +195,37 @@ TEST(TestBeerLambertLawMonoChromatic, TestBeerLambertLawPolyChromatic)
         g_number_of_pixels.setY(g_number_of_pixels.getY() + 1);
     }
 
-    // Register the exit callback
-    atexit(quit);
+    // Set an error callback
+    glfwSetErrorCallback(errorCallback);
 
-    // Create an OpenGL context
-#ifdef HAS_EGL
-    g_GL_context.create("EGL", 3, 2);
-#else
-    g_GL_context.create("OpenGL", 3, 2);
-#endif
+    // Initialize GLFW
+    ASSERT_EQ(glfwInit(), GLFW_TRUE) << "Cannot initialise GLFW.";
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_VISIBLE, false);
+
+    // Enable anti-aliasing
+    glfwWindowHint(GLFW_SAMPLES, 4);
+
+    // Create a windowed mode window and its OpenGL context
+    g_p_main_window_id = glfwCreateWindow(g_main_window_width,
+        g_main_window_height,
+        "gVirtualXRay -- Unit testing: Beer-Lambert Law, Monochromatism Case.",
+        0,
+        0);
+
+    // Window cannot be created
+    if (!g_p_main_window_id)
+        {
+        glfwTerminate();
+        }
+    ASSERT_TRUE(g_p_main_window_id) << "Cannot create a GLFW windowed mode window and its OpenGL context.";
+
+    // Make the window's context current
+    glfwMakeContextCurrent(g_p_main_window_id);
 
     // Initialise GLEW
     initialiseGLEW();
@@ -224,6 +247,11 @@ TEST(TestBeerLambertLawMonoChromatic, TestBeerLambertLawPolyChromatic)
     g_xray_half_precision_renderer.addOuterSurface(&g_scene_graph.getChild("outside"));
     g_xray_full_precision_renderer.addInnerSurface(&g_scene_graph.getChild("inside"));
     g_xray_full_precision_renderer.addOuterSurface(&g_scene_graph.getChild("outside"));
+
+    // Set the projection matrix
+    GLint width(0);
+    GLint height(0);
+    glfwGetFramebufferSize(g_p_main_window_id, &width, &height);
 
     // Compute the X-ray image
     g_xray_half_precision_renderer.computeImage(g_sample_rotation_matrix);
@@ -255,7 +283,10 @@ TEST(TestBeerLambertLawMonoChromatic, TestBeerLambertLawPolyChromatic)
     simulated_result = central_pixel;
     ASSERT_FLOAT_EQ(g_expected_result, simulated_result);
 
-    // Close the window and shut EGL
+    // Close the window
+    glfwSetWindowShouldClose(g_p_main_window_id, GL_TRUE);
+
+    // Close the window and shut GLFW
     quit();
 
     std::cout << "On GPU, with full precision, the energy (in keV) transmitted orthogonally throw the middle of cube and cylinder actually is:" << std::endl;
@@ -270,11 +301,24 @@ TEST(TestBeerLambertLawMonoChromatic, TestBeerLambertLawPolyChromatic)
 }
 
 
+//----------------------------------------------------
+void errorCallback(int error, const char* description)
+//----------------------------------------------------
+{
+    std::cerr << "GLFW error: " << description << std::endl;
+}
+
+
 //---------
 void quit()
 //---------
 {
-	g_GL_context.release();
+    if (g_p_main_window_id)
+        {
+        glfwDestroyWindow(g_p_main_window_id);
+        g_p_main_window_id = 0;
+        //glfwTerminate();
+        }
 }
 
 

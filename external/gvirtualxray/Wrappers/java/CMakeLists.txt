@@ -1,16 +1,9 @@
-find_package(Java COMPONENTS Development)
-find_package(JNI)
-
-IF (NOT Java_FOUND)
-  MESSAGE(FATAL_ERROR "Java was not found, you need to install it, on openSUSE, I use sudo zypper install java-11-openjdk")
-ENDIF ()
-
-IF (NOT JNI_FOUND)
-  MESSAGE(FATAL_ERROR "JNI was not found, you need to install it, on openSUSE, I use sudo zypper install java-11-openjdk")
-ENDIF ()
-
+find_package(Java COMPONENTS Development REQUIRED)
 include(UseJava)
+
+find_package(JNI REQUIRED)
 INCLUDE_DIRECTORIES(${JNI_INCLUDE_DIRS})
+
 
 SET (module gvxrJava)
 
@@ -30,10 +23,6 @@ set_property(
     PROPERTY SWIG_MODULE_NAME ${module})
 
 swig_link_libraries(${module} ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${JNI_LIBRARIES})
-
-IF (USE_SUPERBUILD)
-    ADD_DEPENDENCIES(${module} SimpleGVXR)
-ENDIF ()
 
 configure_file(test.java.in ${CMAKE_CURRENT_BINARY_DIR}/test.java)
 FILE(COPY ../welsh-dragon-small.stl DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

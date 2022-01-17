@@ -32,7 +32,7 @@
 
 SET (gvxrWrappers_VERSION_MAJOR 1)
 SET (gvxrWrappers_VERSION_MINOR 0)
-SET (gvxrWrappers_VERSION_PATCH 6)
+SET (gvxrWrappers_VERSION_PATCH 1)
 SET (gvxrWrappers_VERSION_STRING "${gvxrWrappers_VERSION_MAJOR}.${gvxrWrappers_VERSION_MINOR}.${gvxrWrappers_VERSION_PATCH}")
 
 SET (gvxrWrappers_LICENSE )

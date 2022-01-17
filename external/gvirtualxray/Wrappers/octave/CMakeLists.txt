@@ -1,8 +1,4 @@
-find_package(Octave)
-
-IF (NOT Octave_FOUND)
-  MESSAGE(FATAL_ERROR "GNU Octave was not found, you need to install it, on openSUSE, I use sudo zypper install octave-devel")
-ENDIF ()
+find_package(Octave REQUIRED)
 
 INCLUDE_DIRECTORIES(${OCTAVE_INCLUDE_DIRS})
 
@@ -24,10 +20,6 @@ set_property(
     PROPERTY SWIG_MODULE_NAME ${module})
 
 swig_link_libraries(${module} ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${OCTAVE_LIBRARIES})
-
-IF (USE_SUPERBUILD)
-    ADD_DEPENDENCIES(${module} SimpleGVXR)
-ENDIF ()
 
 configure_file(test.m.in ${CMAKE_CURRENT_BINARY_DIR}/test.m)
 FILE(COPY ../welsh-dragon-small.stl DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
