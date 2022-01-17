@@ -2,9 +2,12 @@ FROM nvidia/cuda:11.4.2-devel-ubuntu20.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
+    build-essential \
     wget \
     git \
     curl \
+    gcc \
+    g++ \
     freeglut3-dev \
     libatlas-base-dev \
     libboost-all-dev \
@@ -80,6 +83,8 @@ RUN apt-get install -y \
     libxorg-gtest-dev \
     glew-utils \
     libglewmx-dev \
+    libgl1-mesa-glx \
+    mesa-utils \
     libgl-dev \
     libosmesa-dev \
     libtiff5-dev \
@@ -103,6 +108,7 @@ RUN mkdir src && mkdir bin && mkdir install
 COPY external/gvirtualxray src
 
 ENV GVXR_INSTALL_DIR=/external/gvxr/install
+ENV CC=/usr/bin/gcc
 
 WORKDIR /external/gvxr/bin
 RUN cmake \
@@ -119,6 +125,7 @@ RUN cmake \
         -B $PWD
 
 RUN make -j48
+RUN make install
 
 ENV EGL_PLATFORM=x11
 
@@ -126,14 +133,22 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute,display
 
 WORKDIR /angiogen
-RUN cp /external/gvxr/install/gvxrWrapper-1.0.1/python3/* .
+RUN cp /external/gvxr/install/gvxrWrapper-1.0.6/python3/* .
 
-RUN apt-get install -y xvfb
-RUN pip install scikit-image tqdm fastapi "uvicorn[standard]"
-RUN pip install pyyaml
+RUN pip install pydantic
+RUN pip install scikit-image tqdm 
+RUN pip install fastapi "uvicorn[standard]"
+
+# RUN apt-get install -y xvfb
+# RUN pip install scikit-image tqdm fastapi "uvicorn[standard]"
 
 COPY angiogen .
 
-CMD python main.py
+ENV LIBGL_ALWAYS_INDIRECT=1
+
+# COPY external/gvirtualxray/Wrappers/welsh-dragon-small.stl /data
+
+# CMD nvidia-smi 
+# CMD python main.py
 # CMD uvicorn server:app --host 0.0.0.0 --port 80
 # CMD xvfb-run uvicorn server:app --host 0.0.0.0 --port 80

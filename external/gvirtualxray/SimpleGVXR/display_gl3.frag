@@ -106,17 +106,17 @@ void main(void)
         vec3 view_direction  = vec3(g_object_position) / g_object_position.w;
         vec3 normal_vector   = normalize(g_normal);
         vec3 light_direction = normalize(vec3(light_position.xyz));
-        
+
         vec3 half_vector     = normalize(view_direction + light_direction);
-    
-        vec3 global_ambient = vec3(light_global_ambient * material_ambient);
-        vec3 ambient        = vec3(material_ambient  * light_ambient);
-        vec3 diffuse        = vec3(material_diffuse  * light_diffuse  *
-            max(0.0, dot(light_direction, normal_vector)));
-        vec3 specular       = vec3(material_specular * light_specular *
-            pow(max(dot(normal_vector, half_vector), 0.0), material_shininess));
-    
-        fragColor = vec4(global_ambient + ambient + diffuse + specular, 1.0);
+
+        vec4 global_ambient = light_global_ambient * material_ambient;
+        vec4 ambient        = material_ambient  * light_ambient;
+        vec4 diffuse        = material_diffuse  * light_diffuse  *
+            max(0.0, dot(light_direction, normal_vector));
+        vec4 specular       = material_specular * light_specular *
+            pow(max(dot(normal_vector, half_vector), 0.0), material_shininess);
+
+        fragColor = global_ambient + ambient + diffuse + specular;
         }
     else
         {

@@ -1,0 +1,33 @@
+1.1.4 to 1.1.5
+
+- Move the OpenGL creation into gvxr-core
+- Make sure it compiles on MS Window, Mac OS X, and GNU/Linux (desktop & supercomputer)
+
+1.1.3 to 1.1.4
+
+- Now fully support EGL context
+- Compiles on SuperComputing Wales
+- Successful run of unit tests on SuperComputing Wales
+
+
+1.1.2 to 1.1.3
+
+- Bug fixes
+- Can load meshes from RAM
+- Improve Numpy support
+
+
+1.1.1 to 1.1.2
+
+- Added files in root:
+  - CHANGELOG (this file)
+  - INSTALL.txt
+  - LICENSE.txt
+  - ORGANIZATION
+  - README.md
+  - VERSION.txt
+- Added EGL support for when the computer has no screen
+- Can read ASCII STL files
+- Can load meshes from arrays
+- Ease the installation from source
+- Added a GUI

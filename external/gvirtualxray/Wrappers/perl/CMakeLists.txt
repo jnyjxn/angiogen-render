@@ -1,6 +1,11 @@
 #find_package(Perl REQUIRED)
 find_package(PerlLibs REQUIRED)
 
+IF (NOT PERLLIBS_FOUND)
+  MESSAGE(FATAL_ERROR "PerlLibs was not found, you need to install it, on openSUSE, I use sudo zypper install R-core R-base  R-core-devel R-base-devel")
+ENDIF ()
+
+
 INCLUDE_DIRECTORIES(${PERL_INCLUDE_PATH})
 
 SET (module gvxrPerl)
@@ -21,6 +26,10 @@ set_property(
     PROPERTY SWIG_MODULE_NAME ${module})
 
 swig_link_libraries(${module} ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${PERL_LIBRARY})
+
+IF (USE_SUPERBUILD)
+    ADD_DEPENDENCIES(${module} SimpleGVXR)
+ENDIF ()
 
 configure_file(test.pl.in ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/test.pl)
 FILE(COPY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/test.pl

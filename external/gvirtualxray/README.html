@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Dr Franck P. Vidal (Bangor University)" />
+  <title>gVirtualXRay: Virtual X-Ray Imaging Library on GPU</title>
+  <style>
+    html {
+      line-height: 1.7;
+      font-family: Georgia, serif;
+      font-size: 20px;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 40em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      word-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 1em;
+      }
+    }
+    @media print {
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin-top: 1.7em;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.7em;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1.7em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1.7em 0 1.7em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      font-style: italic;
+    }
+    code {
+      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
+      background-color: #f0f0f0;
+      font-size: 85%;
+      margin: 0;
+      padding: .2em .4em;
+    }
+    pre {
+      line-height: 1.5em;
+      padding: 1em;
+      background-color: #f0f0f0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin-top: 1.7em;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+    }
+    th, td {
+      border-bottom: 1px solid lightgray;
+      padding: 1em 3em 1em 0;
+    }
+    header {
+      margin-bottom: 6em;
+      text-align: center;
+    }
+    nav a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">gVirtualXRay: Virtual X-Ray Imaging Library on GPU</h1>
+<p class="author">Dr Franck P. Vidal (Bangor University)</p>
+<p class="date">6th Jul 2021</p>
+</header>
+<h1 id="gvirtualxray-virtual-x-ray-imaging-library-on-gpu">gVirtualXRay: Virtual X-Ray Imaging Library on GPU</h1>
+<h2 id="links">Links</h2>
+<ul>
+<li><a href="http://gvirtualxray.sourceforge.net/">Homepage</a></li>
+<li><a href="http://gvirtualxray.sourceforge.net/downloads.php">Download</a></li>
+<li><a href="mailto:f%20%3CDOT%3E%20vidal%20%3CAT%3E%20bangor%20%3CDOT%3E%20ac%20%3CDOT%3E%20uk">Help</a></li>
+<li><a href="http://gvirtualxray.sourceforge.net/demos.php">Demos</a></li>
+<li><a href="http://gvirtualxray.sourceforge.net/publications.php">Publications</a></li>
+</ul>
+<h2 id="about">About</h2>
+<p>This project is focused on developing new software technologies for simulating X-ray images on the graphics processor unit (GPU) using OpenGL. It supports ‘old’ OpenGL implementation as well as modern OpenGL core profile (OpenGL 3.2+). No deprecated function in OpenGL has been used. The library takes care of matrix transformations, matrix stacks, etc.</p>
+<p>X-ray simulations created with gVirtualXRay have been used in various applications, including:</p>
+<ul>
+<li>real-time medical simulations for training [<a href="#1">1</a>,<a href="#2">2</a>,<a href="#3">3</a>],</li>
+<li>micro-CT in material science application
+<ul>
+<li>optimisation for reverse engineering of tungsten fibres [<a href="#4">4</a>]</li>
+<li>study of artefact causes in X-ray micro-CT [<a href="#5">5</a>]</li>
+</ul></li>
+<li>designing new clinical imaging techniques [<a href="#6">6</a>]</li>
+<li>teaching particle physics to undergraduate students [<a href="#7">7</a>]</li>
+<li>realistic data acquisition simulation in CT imaging with patient respiration [<a href="#1">1</a>,<a href="#8">8</a>,<a href="#9">9</a>].</li>
+</ul>
+<p>Please check gVirtualXRay’s website at <a href="http://gvirtualxray.sourceforge.net/">http://gvirtualxray.sourceforge.net/</a> for more information.</p>
+<h2 id="how-to-cite">How to cite</h2>
+<p>If you use gVirtualXRay, cite both these papers:</p>
+<ol type="1">
+<li>Vidal, F. P., Garnier, M., Freud, N., Létang, J. M., &amp; John, N. W. Simulation of X-ray attenuation on the GPU. In <em>Proceedings of Theory and Practice of Computer Graphics 2009</em>, pages 25-32, Cardiff, UK, June 2009. Eurographics Association. <a href="http://dx.doi.org/10.2312/LocalChapterEvents/TPCG/TPCG09/025-032">DOI: 10.2312/LocalChapterEvents/TPCG/TPCG09/025-032</a></li>
+</ol>
+<pre><code>@article{Vidal2016ComputMedImagingGraph,
+  author = &quot;Franck P. Vidal and Pierre-Frédéric Villard&quot;,
+  title = &quot;Development and validation of real-time simulation of X-ray imaging
+    with respiratory motion &quot;,
+  journal = &quot;Computerized Medical Imaging and Graphics &quot;,
+  year = &quot;2016&quot;,
+  volume = &quot;49&quot;,
+  pages = &quot;1-15&quot;,
+  month = apr,
+  abstract = &quot;Abstract We present a framework that combines evolutionary
+    optimisation, soft tissue modelling and ray tracing on \{GPU\} to
+    simultaneously compute the respiratory motion and X-ray imaging in
+    real-time. Our aim is to provide validated building blocks with high
+    fidelity to closely match both the human physiology and the physics of
+    X-rays. A CPU-based set of algorithms is presented to model organ
+    behaviours during respiration. Soft tissue deformation is computed with an
+    extension of the Chain Mail method. Rigid elements move according to
+    kinematic laws. A GPU-based surface rendering method is proposed to
+    compute the X-ray image using the Beer–Lambert law. It is provided as an
+    open-source library. A quantitative validation study is provided to
+    objectively assess the accuracy of both components: (i) the respiration
+    against anatomical data, and (ii) the X-ray against the Beer–Lambert law and
+    the results of Monte Carlo simulations. Our implementation can be used in
+    various applications, such as interactive medical virtual environment to
+    train percutaneous transhepatic cholangiography in interventional radiology,
+     2D/3D registration, computation of digitally reconstructed radiograph,
+     simulation of 4D sinograms to test tomography reconstruction tools.&quot;,
+  doi = &quot;10.1016/j.compmedimag.2015.12.002&quot;,
+  pmid = {26773644},
+  issn = &quot;0895-6111&quot;,
+  keywords = &quot;X-ray simulation, Deterministic simulation (ray-tracing),
+    Digitally reconstructed radiograph, Respiration simulation,
+    Medical virtual environment, Imaging guidance,
+    Interventional radiology training&quot;,
+  publisher = {Elsevier},
+  }</code></pre>
+<ol start="2" type="1">
+<li>Vidal, F. P., &amp; Villard, P.-F. (2016). Development and validation of real-time simulation of X-ray imaging with respiratory motion. <em>Computerized Medical Imaging and Graphics</em>. <a href="http://dx.doi.org/10.1016/j.compmedimag.2015.12.002">DOI: 10.1016/j.compmedimag.2015.12.002</a></li>
+</ol>
+<pre><code>@inproceedings{Vidal2009TPCG,
+  author = {F. P. Vidal and M. Garnier and N. Freud and J. M. L\&#39;etang and N. W. John},
+  title = {Simulation of {X-ray} Attenuation on the {GPU}},
+  booktitle = {Proceedings of Theory and Practice of Computer Graphics 2009},
+  year = 2009,
+  pages = {25-32},
+  month = jun,
+  address = {Cardiff, UK},
+  annotation = {Jun~17--19, 2009},
+  note = {Winner of Ken Brodlie Prize for Best Paper},
+  doi = {10.2312/LocalChapterEvents/TPCG/TPCG09/025-032},
+  abstract = {In this paper, we propose to take advantage of computer graphics hardware
+    to achieve an accelerated simulation of X-ray transmission imaging,
+    and we compare results with a fast and robust software-only implementation.
+    The running times of the GPU and CPU implementations are compared
+    in different test cases. The results show that the GPU implementation
+    with full floating point precision is faster by a factor of about
+    60 to 65 than the CPU implementation, without any significant loss
+    of accuracy. The increase in performance achieved with GPU calculations
+    opens up new perspectives. Notably, it paves the way for physically-realistic
+    simulation of X-ray imaging in interactive time.},
+  keywords = {Physically based modeling, Raytracing, Physics},
+  publisher = {Eurographics Association},
+}</code></pre>
+<h2 id="scientific-and-industrial-collaboration">Scientific and Industrial Collaboration</h2>
+<p>If you are interested in any form of collaboration (e.g. to develop your own application) on a paper or grant proposal, drop me an email <a href="f%20%3CDOT%3E%20vidal%20%3CAT%3E%20bangor%20%3CDOT%3E%20ac%20%3CDOT%3E%20uk">(f DOT vidal AT bangor DOT ac DOT uk)</a>.</p>
+<h2 id="copyright">Copyright</h2>
+<p>The source code of gVirtualXRay’s is available under the BSD 3-Clause License. For details on use and redistribution please refer to <a href="LICENSE.txt">LICENSE.txt</a> and <a href="http://opensource.org/licenses/BSD-3-Clause">http://opensource.org/licenses/BSD-3-Clause</a>.</p>
+<h2 id="build-and-test-status-of-the-trunk">Build and test status of the trunk</h2>
+<p>gVirtualXRay may be built from source using <a href="https://cmake.org">CMake</a>. It has been successfully tested on the following platforms (compilers):</p>
+<ul>
+<li>MS Windows 10, MS Visual C++ 16 2019</li>
+<li>MS Windows 10, MS Visual C++ 15 2017</li>
+<li>GNU/Linux openSUSE Leap 15.0 (x86_64), g++ 7.4.1</li>
+<li>GNU/Linux openSUSE Leap 15.1 (x86_64), g++ 8.?.?</li>
+<li>Mac OS X 10.13.6, Apple LLVM 9.1.0 (clang-902.0.39.2)</li>
+<li>Mac OS X 10.13.6, GNU gcc 8.3.0</li>
+<li>Mac OS X 10.??, g++ ?.?</li>
+<li>MS Windows 10, cross compilation using MXE on GNU/Linux openSUSE Leap 15.0 (x86_64) and Mac OS X 10.13</li>
+</ul>
+<p>It should be possible to build it on other platforms, but this has not been tested.</p>
+<p>gVirtualXRay has been successfully tested on the following platforms (graphics cards):</p>
+<ul>
+<li>NVIDIA GeForce 320M (laptop, Mac OS X)</li>
+<li>Intel HD Graphics 4000 (laptop, Mac OS X)</li>
+<li>AMD Radeon X1950pro (PC, GNU/Linux &amp; Windows 10)</li>
+<li>NVIDIA Titan Xp (PC, GNU/Linux)</li>
+</ul>
+<p>It should be possible to run it on other platforms, but this has not been tested.</p>
+<h2 id="references">References</h2>
+<ol type="1">
+<li><a name="1"></a> Sujar, A., Meuleman, A., Villard, P.-F., García, M., &amp; Vidal, F. P. (2017). gVirtualXRay: Virtual X-Ray Imaging Library on GPU. In <em>Computer Graphics and Visual Computing (CGVC)</em> (pp. 61–68). <a href="https://doi.org/10.2312/cgvc.20171279">DOI: 10.2312/cgvc.20171279</a></li>
+<li><a name="2"></a>Sujar, A., Kelly, G., García, M., &amp; Vidal, F. P. (2019). Projectional Radiography Simulator: an Interactive Teaching Tool. In <em>Computer Graphics and Visual Computing (CGVC)</em>. <a href="https://doi.org/10.2312/cgvc.20191267">DOI: 10.2312/cgvc.20191267</a></li>
+<li><a name="3"></a>Zuo, Z., Qian, W. Y., Liao, X., &amp; Heng, P. (2018). Position based catheterization and angiography simulation. In <em>2018 IEEE 6th International Conference on Serious Games and Applications for Health (SeGAH)</em> (pp. 1–7). <a href="http://dx.doi.org/10.1109/SeGAH.2018.8401369">DOI: 10.1109/SeGAH.2018.8401369</a></li>
+<li><a name="4"></a>Wen, T., Mihail, R., Al-maliki, shatha, Letang, J., &amp; Vidal, F. P. (2019). Registration of 3D Triangular Models to 2D X-ray Projections Using Black-box Optimisation and X-ray Simulation. In <em>Computer Graphics and Visual Computing (CGVC)</em>. <a href="http://dx.doi.org/10.2312/cgvc.20191265">DOI: 10.2312/cgvc.20191265</a></li>
+<li><a name="5"></a>Vidal, F. P. (2018). gVirtualXRay – Fast X-ray Simulation on GPU. In <em>Workshop on Image-Based Finite Element Method for Industry 2018 (IBFEM-4i 2018)</em>. <a href="http://dx.doi.org/10.5281/zenodo.1452506">DOI: 10.5281/zenodo.1452506</a></li>
+<li><a name="6"></a>Albiol, F., Corbi, A., &amp; Albiol, A. (n.d.). Densitometric Radiographic Imaging With Contour Sensors. <em>IEEE Access</em>, 7, 18902–18914. <a href="http://dx.doi.org/10.1109/ACCESS.2019.2895925">DOI: 10.1109/ACCESS.2019.2895925</a></li>
+<li><a name="7"></a>Corbi, A., Burgos, D., Vidal, F. P., Albiol, F., &amp; Albiol, A. (2020). X-ray imaging virtual online laboratory for engineering undergraduates. European Journal of Physics, 41(1), 1–31. <a href="http://dx.doi.org/10.1088/1361-6404/ab5011">DOI: 10.1088/1361-6404/ab5011</a></li>
+<li><a name="8"></a>Vidal, F. P., &amp; Villard, P.-F. (2016). Development and validation of real-time simulation of X-ray imaging with respiratory motion. <em>Computerized Medical Imaging and Graphics</em>. <a href="http://dx.doi.org/10.1016/j.compmedimag.2015.12.002">DOI: 10.1016/j.compmedimag.2015.12.002</a></li>
+<li><a name="9"></a>Simulated Motion Artefact in Computed Tomography. (2015). <em>In Eurographics Workshop on Visual Computing for Biology and Medicine</em>. <a href="http://dx.doi.org/10.2312/vcbm.20151228">DOI: 10.2312/vcbm.20151228</a>.</li>
+</ol>
+<p><small>© Copyright 2020, Dr Franck P. Vidal, School of Computer science and Electronic Engineering, Bangor University. All rights reserved</small></p>
+</body>
+</html>

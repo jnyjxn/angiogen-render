@@ -38,10 +38,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *	@file		XRayRenderer.h
 *
 *	@brief		Class to compute and renderer X-ray images on GPU.
+*               Now supports GLSL450 and OpenGL 4.5
 *
 *	@version	1.0
 *
-*	@date		01/12/2013
+*	@date		25/02/2020
 *
 *	@author		Dr Franck P. Vidal
 *
@@ -53,7 +54,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
 *	@section	Copyright
 *				(c) by Dr Franck P. Vidal (franck.p.vidal@fpvidal.net),
-*				http://www.fpvidal.net/, Dec 2014, 2014, version 1.0,
+*				http://www.fpvidal.net/, Feb 2020, 2020, version 1.0,
 *				BSD 3-Clause License
 *
 ********************************************************************************
@@ -67,7 +68,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "GL/glew.h"
 #endif
 
-#ifndef GVXR_CONFIG_H
+#ifndef __gVirtualXRayConfig_h
 #include "gVirtualXRay/gVirtualXRayConfig.h"
 #endif
 
@@ -75,43 +76,43 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 #include <cstring>
 
-#ifndef GVXR_XRAY_RENDERER_H
+#ifndef __XRayRenderer_h
 #include "gVirtualXRay/XRayRenderer.h"
 #endif
 
-#ifndef GVXR_EXCEPTION_H
+#ifndef __Exception_h
 #include "gVirtualXRay/Exception.h"
 #endif
 
-#ifndef GVXR_OUT_OF_MEMORY_EXCEPTION_H
+#ifndef __OutOfMemoryException_h
 #include "gVirtualXRay/OutOfMemoryException.h"
 #endif
 
-#ifndef GVXR_OUT_OF_BOUNDS_EXCEPTION_H
+#ifndef __OutOfBoundsException_h
 #include "gVirtualXRay/OutOfBoundsException.h"
 #endif
 
-#ifndef GVXR_XRAY_INVALID_INTERNAL_FORMAT_EXCEPTION_H
+#ifndef __InvalidInternalFormalException_h
 #include "gVirtualXRay/InvalidInternalFormalException.h"
 #endif
 
-#ifndef GVXR_XRAY_NO_DETECTOR_EXCEPTION_H
+#ifndef __NoDetectorException_h
 #include "gVirtualXRay/NoDetectorException.h"
 #endif
 
-#ifndef GVXR_XRAY_NO_BEAM_EXCEPTION_H
+#ifndef __NoBeamException_h
 #include "gVirtualXRay/NoBeamException.h"
 #endif
 
-#ifndef GVXR_XRAY_INVALID_IMAGE_SIZE_EXCEPTION_H
+#ifndef __InvalidImageSizeException_h
 #include "gVirtualXRay/InvalidImageSizeException.h"
 #endif
 
-#ifndef GVXR_FILE_DOES_NOT_EXIST_EXCEPTION_H
+#ifndef __FileDoesNotExistException_h
 #include "gVirtualXRay/FileDoesNotExistException.h"
 #endif
 
-#ifndef GVXR_OPENGL_UTILITIES_H
+#ifndef __OpenGLUtilities_h
 #include "gVirtualXRay/OpenGLUtilities.h"
 #endif
 
@@ -119,11 +120,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gVirtualXRay/Utilities.h"
 #endif
 
-#ifndef GVXR_ATOMIC_ELEMENT_H
+#ifndef __AtomicElement_h
 #include "gVirtualXRay/AtomicElement.h"
 #endif
 
 #include "gVirtualXRay/framebufferObject.h"
+
 
 #include "MUx_Dx_gl2.frag.h"
 #include "MUx_Dx_gl2.vert.h"
@@ -131,11 +133,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "MUx_Dx_gl3.frag.h"
 #include "MUx_Dx_gl3.vert.h"
 
+#include "MUx_Dx_gl4.frag.h"
+#include "MUx_Dx_gl4.vert.h"
+
+
 #include "cumulated_l_buffer_gl2.frag.h"
 #include "cumulated_l_buffer_gl2.vert.h"
 
 #include "cumulated_l_buffer_gl3.frag.h"
 #include "cumulated_l_buffer_gl3.vert.h"
+
+#include "cumulated_l_buffer_gl4.frag.h"
+#include "cumulated_l_buffer_gl4.vert.h"
+
 
 #include "l_buffer_gl2.frag.h"
 #include "l_buffer_gl2.vert.h"
@@ -143,11 +153,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "l_buffer_gl3.frag.h"
 #include "l_buffer_gl3.vert.h"
 
+#include "l_buffer_gl4.frag.h"
+#include "l_buffer_gl4.vert.h"
+
+
 #include "clean_l_buffer_gl2.frag.h"
 #include "clean_l_buffer_gl2.vert.h"
 
 #include "clean_l_buffer_gl3.frag.h"
 #include "clean_l_buffer_gl3.vert.h"
+
+#include "clean_l_buffer_gl4.frag.h"
+#include "clean_l_buffer_gl4.vert.h"
+
 
 #include "outer_surface_l_buffer_gl2.frag.h"
 #include "outer_surface_l_buffer_gl2.vert.h"
@@ -155,11 +173,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "outer_surface_l_buffer_gl3.frag.h"
 #include "outer_surface_l_buffer_gl3.vert.h"
 
+#include "outer_surface_l_buffer_gl4.frag.h"
+#include "outer_surface_l_buffer_gl4.vert.h"
+
+
 #include "xray_attenuation_gl2.frag.h"
 #include "xray_attenuation_gl2.vert.h"
 
 #include "xray_attenuation_gl3.frag.h"
 #include "xray_attenuation_gl3.vert.h"
+
+#include "xray_attenuation_gl4.frag.h"
+#include "xray_attenuation_gl4.vert.h"
+
 
 #include "xray_display_gl2.frag.h"
 #include "xray_display_gl2.vert.h"
@@ -167,10 +193,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xray_display_gl3.frag.h"
 #include "xray_display_gl3.vert.h"
 
+#include "xray_display_gl4.frag.h"
+#include "xray_display_gl4.vert.h"
+
 #include "mu_water.csv.h"
 
-#include <iostream>
-#include <fstream>
 
 //******************************************************************************
 //	define
@@ -442,7 +469,7 @@ void XRayRenderer::computeSinogram(MATRIX4& aModellingTransformationMatrix,
         transformation_matrix = transformation_matrix * aModellingTransformationMatrix;
 
         // Compute the X-ray image
-        computeImage(transformation_matrix);
+        computeImage(transformation_matrix, true);
 
         // Load the FBO in the main memory
         getFBO(XRAY_DETECTOR_ENERGY_FLUENCE_FBO_ID);
@@ -573,7 +600,7 @@ void XRayRenderer::computeProjectionSet(MATRIX4& aModellingTransformationMatrix,
         transformation_matrix = transformation_matrix * aModellingTransformationMatrix;
 
         // Compute the X-ray image
-        computeImage(transformation_matrix);
+        computeImage(transformation_matrix, true);
 
         // Load the FBO in the main memory
         getFBO(XRAY_DETECTOR_ENERGY_FLUENCE_FBO_ID);
@@ -859,7 +886,8 @@ void XRayRenderer::checkGPUCapabilities()
 
 
 //----------------------------------------------------------------------------
-void XRayRenderer::computeImage(const MATRIX4& aModellingTransformationMatrix)
+void XRayRenderer::computeImage(const MATRIX4& aModellingTransformationMatrix,
+                                bool anIntegrateEnergyFlag)
 //----------------------------------------------------------------------------
 {
 	// The renderer is ready
@@ -974,7 +1002,7 @@ void XRayRenderer::computeImage(const MATRIX4& aModellingTransformationMatrix)
 					computeSumMUxDx(m_p_inner_surface_set.size(), m_p_outer_surface->getPhotonCrossSection());
 				}
 
-				computeIntegratedEnergy();
+				computeIntegratedEnergy(anIntegrateEnergyFlag);
 			}
 		}
 
@@ -1016,7 +1044,17 @@ void XRayRenderer::initShaders()
 	std::string vertex_shader;
 	std::string fragment_shader;
 
-	if (useOpenGL3_2OrAbove())
+	if (!glCreateProgram)
+	{
+		throw Exception(__FILE__, __FUNCTION__, __LINE__, "OpenGL's functions are not properly initialised, did you forget to call \"initialiseGLEW()\"?");
+	}
+
+    if (useOpenGL45())
+	{
+	    z_lib_return_code_vertex   = inflate(g_l_buffer_gl4_vert, sizeof(g_l_buffer_gl4_vert),   &p_vertex_shader);
+	    z_lib_return_code_fragment = inflate(g_l_buffer_gl4_frag, sizeof(g_l_buffer_gl4_frag), &p_fragment_shader);
+	}
+    else if (useOpenGL32())
 	{
 	    z_lib_return_code_vertex   = inflate(g_l_buffer_gl3_vert, sizeof(g_l_buffer_gl3_vert),   &p_vertex_shader);
 	    z_lib_return_code_fragment = inflate(g_l_buffer_gl3_frag, sizeof(g_l_buffer_gl3_frag), &p_fragment_shader);
@@ -1040,7 +1078,12 @@ void XRayRenderer::initShaders()
 	m_shader_set[XRAY_DETECTOR_LBUFFER_SHADER_ID].loadSource(vertex_shader, fragment_shader);
 
 	// Cumulated L-buffer
-    if (useOpenGL3_2OrAbove())
+    if (useOpenGL45())
+    {
+        z_lib_return_code_vertex   = inflate(g_cumulated_l_buffer_gl4_vert, sizeof(g_cumulated_l_buffer_gl4_vert),   &p_vertex_shader);
+        z_lib_return_code_fragment = inflate(g_cumulated_l_buffer_gl4_frag, sizeof(g_cumulated_l_buffer_gl4_frag), &p_fragment_shader);
+    }
+    else if (useOpenGL32())
     {
         z_lib_return_code_vertex   = inflate(g_cumulated_l_buffer_gl3_vert, sizeof(g_cumulated_l_buffer_gl3_vert),   &p_vertex_shader);
         z_lib_return_code_fragment = inflate(g_cumulated_l_buffer_gl3_frag, sizeof(g_cumulated_l_buffer_gl3_frag), &p_fragment_shader);
@@ -1064,7 +1107,12 @@ void XRayRenderer::initShaders()
 	m_shader_set[XRAY_DETECTOR_CUMULATED_LBUFFER_SHADER_ID].loadSource(vertex_shader, fragment_shader);
 
     // Clean L-buffer
-    if (useOpenGL3_2OrAbove())
+    if (useOpenGL45())
+    {
+        z_lib_return_code_vertex   = inflate(g_clean_l_buffer_gl4_vert, sizeof(g_clean_l_buffer_gl4_vert),   &p_vertex_shader);
+        z_lib_return_code_fragment = inflate(g_clean_l_buffer_gl4_frag, sizeof(g_clean_l_buffer_gl4_frag), &p_fragment_shader);
+    }
+    else if (useOpenGL32())
     {
         z_lib_return_code_vertex   = inflate(g_clean_l_buffer_gl3_vert, sizeof(g_clean_l_buffer_gl3_vert),   &p_vertex_shader);
         z_lib_return_code_fragment = inflate(g_clean_l_buffer_gl3_frag, sizeof(g_clean_l_buffer_gl3_frag), &p_fragment_shader);
@@ -1088,7 +1136,12 @@ void XRayRenderer::initShaders()
     m_shader_set[XRAY_DETECTOR_CLEAN_LBUFFER_SHADER_ID].loadSource(vertex_shader, fragment_shader);
 
 	// Outer L-buffer
-    if (useOpenGL3_2OrAbove())
+    if (useOpenGL45())
+    {
+        z_lib_return_code_vertex   = inflate(g_outer_surface_l_buffer_gl4_vert, sizeof(g_outer_surface_l_buffer_gl4_vert),   &p_vertex_shader);
+        z_lib_return_code_fragment = inflate(g_outer_surface_l_buffer_gl4_frag, sizeof(g_outer_surface_l_buffer_gl4_frag), &p_fragment_shader);
+    }
+    else if (useOpenGL32())
     {
         z_lib_return_code_vertex   = inflate(g_outer_surface_l_buffer_gl3_vert, sizeof(g_outer_surface_l_buffer_gl3_vert),   &p_vertex_shader);
         z_lib_return_code_fragment = inflate(g_outer_surface_l_buffer_gl3_frag, sizeof(g_outer_surface_l_buffer_gl3_frag), &p_fragment_shader);
@@ -1112,7 +1165,12 @@ void XRayRenderer::initShaders()
 	m_shader_set[XRAY_DETECTOR_OUTER_SURFACE_LBUFFER_SHADER_ID].loadSource(vertex_shader, fragment_shader);
 
 	// Mu X Dx
-    if (useOpenGL3_2OrAbove())
+    if (useOpenGL45())
+    {
+        z_lib_return_code_vertex   = inflate(g_MUx_Dx_gl4_vert, sizeof(g_MUx_Dx_gl4_vert),   &p_vertex_shader);
+        z_lib_return_code_fragment = inflate(g_MUx_Dx_gl4_frag, sizeof(g_MUx_Dx_gl4_frag), &p_fragment_shader);
+    }
+    else if (useOpenGL32())
     {
         z_lib_return_code_vertex   = inflate(g_MUx_Dx_gl3_vert, sizeof(g_MUx_Dx_gl3_vert),   &p_vertex_shader);
         z_lib_return_code_fragment = inflate(g_MUx_Dx_gl3_frag, sizeof(g_MUx_Dx_gl3_frag), &p_fragment_shader);
@@ -1136,7 +1194,12 @@ void XRayRenderer::initShaders()
 	m_shader_set[XRAY_DETECTOR_SUM_MUx_Dx_SHADER_ID].loadSource(vertex_shader, fragment_shader);
 
 	// Energy fluence
-    if (useOpenGL3_2OrAbove())
+    if (useOpenGL45())
+    {
+        z_lib_return_code_vertex   = inflate(g_xray_attenuation_gl4_vert, sizeof(g_xray_attenuation_gl4_vert),   &p_vertex_shader);
+        z_lib_return_code_fragment = inflate(g_xray_attenuation_gl4_frag, sizeof(g_xray_attenuation_gl4_frag), &p_fragment_shader);
+    }
+    else if (useOpenGL32())
     {
         z_lib_return_code_vertex   = inflate(g_xray_attenuation_gl3_vert, sizeof(g_xray_attenuation_gl3_vert),   &p_vertex_shader);
         z_lib_return_code_fragment = inflate(g_xray_attenuation_gl3_frag, sizeof(g_xray_attenuation_gl3_frag), &p_fragment_shader);
@@ -1160,7 +1223,12 @@ void XRayRenderer::initShaders()
 	m_shader_set[XRAY_DETECTOR_ENERGY_FLUENCE_SHADER_ID].loadSource(vertex_shader, fragment_shader);
 
 	// Display
-    if (useOpenGL3_2OrAbove())
+    if (useOpenGL45())
+    {
+        z_lib_return_code_vertex   = inflate(g_xray_display_gl4_vert, sizeof(g_xray_display_gl4_vert),   &p_vertex_shader);
+        z_lib_return_code_fragment = inflate(g_xray_display_gl4_frag, sizeof(g_xray_display_gl4_frag), &p_fragment_shader);
+    }
+    else if (useOpenGL32())
     {
         z_lib_return_code_vertex   = inflate(g_xray_display_gl3_vert, sizeof(g_xray_display_gl3_vert),   &p_vertex_shader);
         z_lib_return_code_fragment = inflate(g_xray_display_gl3_frag, sizeof(g_xray_display_gl3_frag), &p_fragment_shader);
@@ -1514,10 +1582,7 @@ void XRayRenderer::create2DTexture(GLuint* apTextureID,
 
 	GLint width(0);
 	glTexImage2D(GL_PROXY_TEXTURE_2D, 0, anInternalTextureFormat, m_p_detector->getNumberOfPixels().getX(), m_p_detector->getNumberOfPixels().getY(), 0, aType, GL_FLOAT, 0);
-	
-	// This is not successfully filling a value for width
 	glGetTexLevelParameteriv(GL_PROXY_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
-
 	if ((unsigned int)(width) == m_p_detector->getNumberOfPixels().getX())
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, anInternalTextureFormat, m_p_detector->getNumberOfPixels().getX(), m_p_detector->getNumberOfPixels().getY(), 0, aType, GL_FLOAT, 0);
@@ -1819,6 +1884,20 @@ RATIONAL_NUMBER* XRayRenderer::getFBO(unsigned int aFBOID)
 	popFBO();
 
 	return (m_temp_raw_data.getRawData());
+}
+
+
+//------------------------------------------------
+GLuint XRayRenderer::getFboId(unsigned int aFBOID)
+//------------------------------------------------
+{
+		// The FBO does not exist
+		if (aFBOID >= m_p_fbo_set.size())
+		{
+			throw OutOfBoundsException(__FILE__, __FUNCTION__, __LINE__);
+		}
+
+		return m_p_fbo_set[aFBOID]->getID();
 }
 
 
@@ -2377,7 +2456,7 @@ void XRayRenderer::computeSumMUxDx(int anObjectID,
 	    	internal_format = GL_RGB16F;
 
 	    init3DData(internal_format);
-		init3DFBOs();
+			init3DFBOs();
 	}
 
 	// Save the current FBO
@@ -2449,21 +2528,21 @@ void XRayRenderer::computeSumMUxDx(int anObjectID,
 			}
 			else
 			{
-                glBindTexture(GL_TEXTURE_2D, m_p_texture_name_set[XRAY_DETECTOR_UNCLEANED_LBUFFER_TEXTURE_NAME_ID]);
+          glBindTexture(GL_TEXTURE_2D, m_p_texture_name_set[XRAY_DETECTOR_UNCLEANED_LBUFFER_TEXTURE_NAME_ID]);
 			}
 			checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
 
 			// This is not the first object, enable blending
 			if (anObjectID > 0)
 			{
-				glEnable(GL_BLEND);
-				glBlendFunc(GL_ONE, GL_ONE);
+					glEnable(GL_BLEND);
+					glBlendFunc(GL_ONE, GL_ONE);
 			}
 			// This is the first object, disable blending if needed
 			else
 			{
-				// Blending is enable, disable it
-				glDisable(GL_BLEND);
+					// Blending is enable, disable it
+					glDisable(GL_BLEND);
 			}
 
 			// Proceed each energy channel
@@ -2471,36 +2550,37 @@ void XRayRenderer::computeSumMUxDx(int anObjectID,
 					current_slice < m_p_xray_beam->getEnergyChannelNumber();
 					++current_slice)
 			{
-				// Get the energy and the corresponding attenuation coefficient
-                RATIONAL_NUMBER energy = m_p_xray_beam->getEnergyChannel(current_slice).getPhotonEnergy();
-				RATIONAL_NUMBER mu = aPhotonCrossSection.getLinearAttenuationCoefficient(energy);
+					// Get the energy and the corresponding attenuation coefficient
+	        RATIONAL_NUMBER energy = m_p_xray_beam->getEnergyChannel(current_slice).getPhotonEnergy();
+					RATIONAL_NUMBER mu = aPhotonCrossSection.getLinearAttenuationCoefficient(energy);
 
-                // Set the attenuation coefficient
-                // Convert mu in cm-1
-                mu /= 1.0 / cm; // 1/cm because the unit of mu is cm-1
+	        // Set the attenuation coefficient
+	        // Convert mu in cm-1
+	        mu /= 1.0 / cm; // 1/cm because the unit of mu is cm-1
 
-                // Bind the corresponding slice of the 3D texture
-                if (m_p_xray_beam->getEnergyChannelNumber() > 1)
-                {
-                    // Bind default frame buffer
-                    FramebufferObject::Disable();
+					//std::cout << anObjectID << " " << energy / keV << " " << mu << std::endl;
+	        // Bind the corresponding slice of the 3D texture
+	        if (m_p_xray_beam->getEnergyChannelNumber() > 1)
+	        {
+	            // Bind default frame buffer
+	            FramebufferObject::Disable();
 
-                    // Attach the texture
-                    m_p_fbo_set[XRAY_DETECTOR_SUM_MUx_Dx_FBO_ID]->UnattachAll();
-                    m_p_fbo_set[XRAY_DETECTOR_SUM_MUx_Dx_FBO_ID]->AttachTexture(GL_TEXTURE_3D, m_p_texture_name_set[XRAY_DETECTOR_SUM_MUx_Dx_TEXTURE_NAME_ID], GL_COLOR_ATTACHMENT0, 0, current_slice);
+	            // Attach the texture
+	            m_p_fbo_set[XRAY_DETECTOR_SUM_MUx_Dx_FBO_ID]->UnattachAll();
+	            m_p_fbo_set[XRAY_DETECTOR_SUM_MUx_Dx_FBO_ID]->AttachTexture(GL_TEXTURE_3D, m_p_texture_name_set[XRAY_DETECTOR_SUM_MUx_Dx_TEXTURE_NAME_ID], GL_COLOR_ATTACHMENT0, 0, current_slice);
 
-                    // Bind the FBO
-                    m_p_fbo_set[XRAY_DETECTOR_SUM_MUx_Dx_FBO_ID]->Bind();
-                    checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
-                }
+	            // Bind the FBO
+	            m_p_fbo_set[XRAY_DETECTOR_SUM_MUx_Dx_FBO_ID]->Bind();
+	            checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
+	        }
 
-                handle = glGetUniformLocation(program_handle, "g_attenuation_coefficient");
-                glUniform1f(handle, mu);
-                checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
+	        handle = glGetUniformLocation(program_handle, "g_attenuation_coefficient");
+	        glUniform1f(handle, mu);
+	        checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
 
-                // Display the textured square
-                m_detector_temporary_geometry->display();
-                checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
+	        // Display the textured square
+	        m_detector_temporary_geometry->display();
+	        checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
 			}
 
 			// Restore the transformation matrices
@@ -2540,9 +2620,9 @@ void XRayRenderer::computeSumMUxDx(int anObjectID,
 }
 
 
-//------------------------------------------
-void XRayRenderer::computeIntegratedEnergy()
-//------------------------------------------
+//--------------------------------------------------------------------
+void XRayRenderer::computeIntegratedEnergy(bool anIntegrateEnergyFlag)
+//--------------------------------------------------------------------
 {
 	// Save the current FBO
 	pushFBO();
@@ -2618,11 +2698,31 @@ void XRayRenderer::computeIntegratedEnergy()
 					checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
 				}
 
-				handle = glGetUniformLocation(program_handle, "g_n_input_energy");
+				// Get the incident energy
+				RATIONAL_NUMBER incident_energy(m_p_xray_beam->getEnergyChannel(current_slice).getPhotonEnergy());
+
+				// Apply the energy response
+				RATIONAL_NUMBER corrected_energy = m_p_detector->applyEnergyResponse(incident_energy);
+
+				// Convert in MeV
+				corrected_energy /= MeV;
+
+				// Compute the number of photons, not the energy fluence
+				if (!anIntegrateEnergyFlag)
+				{
+						corrected_energy = 1.0;
+				}
+
+				//std::cout << incident_energy / MeV << "\t" << corrected_energy << std::endl;
+
+				// Get the number of photons
 				RATIONAL_NUMBER photon_number(m_p_xray_beam->getEnergyChannel(current_slice).getPhotonNumber());
-				RATIONAL_NUMBER photon_energy(m_p_xray_beam->getEnergyChannel(current_slice).getPhotonEnergy() / MeV);
-				RATIONAL_NUMBER input_energy(photon_number * photon_energy / RATIONAL_NUMBER(m_p_detector->getNumberOfSourceSamples()));
-				glUniform1f(handle, input_energy);
+
+				// Compute the energy
+				RATIONAL_NUMBER total_energy(photon_number * corrected_energy / RATIONAL_NUMBER(m_p_detector->getNumberOfSourceSamples()));
+
+				handle = glGetUniformLocation(program_handle, "g_n_input_energy");
+				glUniform1f(handle, total_energy);
 
 				// Transform the texture coordinates
 				GLdouble z((0.5 + current_slice) / GLdouble(m_p_xray_beam->getEnergyChannelNumber()));

@@ -78,9 +78,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gtest/gtest.h"
 
-#define GLFW_INCLUDE_GLCOREARB 1
-#include <GLFW/glfw3.h>
-
 #ifndef __Types_h
 #include "gVirtualXRay/Types.h"
 #endif
@@ -133,6 +130,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gVirtualXRay/Exception.h"
 #endif
 
+#ifndef __Context_h
+#include "gVirtualXRay/Context.h"
+#endif
+
 
 //******************************************************************************
 //  Name space
@@ -149,12 +150,7 @@ using namespace gVirtualXRay;
 //******************************************************************************
 //  Global variables
 //******************************************************************************
-//******************************************************************************
-//  Global variables
-//******************************************************************************
-GLsizei g_main_window_width(1);
-GLsizei g_main_window_height(1);
-GLFWwindow* g_p_main_window_id(0);
+Context g_GL_context;
 
 Matrix4x4<GLfloat> g_sample_rotation_matrix;
 
@@ -202,37 +198,15 @@ TEST(TestOrtho, TestOrtho)
         g_number_of_pixels.setY(g_number_of_pixels.getY() + 1);
         }
 
-    // Set an error callback
-    glfwSetErrorCallback(errorCallback);
+    // Register the exit callback
+    atexit(quit);
 
-    // Initialize GLFW
-    ASSERT_EQ(glfwInit(), GLFW_TRUE) << "Cannot initialise GLFW.";
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_VISIBLE, false);
-
-    // Enable anti-aliasing
-    glfwWindowHint(GLFW_SAMPLES, 4);
-
-    // Create a windowed mode window and its OpenGL context
-    g_p_main_window_id = glfwCreateWindow(g_main_window_width,
-        g_main_window_height,
-        "gVirtualXRay -- Unit testing: Point source.",
-        0,
-        0);
-
-    // Window cannot be created
-    if (!g_p_main_window_id)
-        {
-        glfwTerminate();
-        }
-    ASSERT_TRUE(g_p_main_window_id) << "Cannot create a GLFW windowed mode window and its OpenGL context.";
-
-    // Make the window's context current
-    glfwMakeContextCurrent(g_p_main_window_id);
+    // Create an OpenGL context
+#ifdef HAS_EGL
+    g_GL_context.create("EGL", 3, 2);
+#else
+    g_GL_context.create("OpenGL", 3, 2);
+#endif
 
     // Initialise GLEW
     initialiseGLEW();
@@ -251,11 +225,6 @@ TEST(TestOrtho, TestOrtho)
     // Add the geometry to the X-ray renderer
     loadSTLFile();
     g_xray_renderer.addInnerSurface(&g_scene_graph.getChild("inside"));
-
-    // Set the projection matrix
-    GLint width(0);
-    GLint height(0);
-    glfwGetFramebufferSize(g_p_main_window_id, &width, &height);
 
     // Output the detector properties
     std::cout << "Detector size: " << g_number_of_pixels.getX() << "x" << g_number_of_pixels.getY() << " pixels" << std::endl;
@@ -285,19 +254,16 @@ TEST(TestOrtho, TestOrtho)
     // Save the projection set
     g_xray_renderer.printProjectionSet("TestOrtho_single_projection.mha");
 
-    
+
     g_xray_renderer.computeLBuffer(g_scene_graph.getChild("inside"),
                                    VEC3(),
                                    g_sample_rotation_matrix,
                                    true);
-    
+
     g_xray_renderer.printLBuffer("TestOrtho_lbuffer.mha");
 
-    
-    // Close the window
-    glfwSetWindowShouldClose(g_p_main_window_id, GL_TRUE);
 
-    // Close the window and shut GLFW
+    // Close the window and shut EGL
     quit();
 
     // Load reference image
@@ -338,24 +304,11 @@ TEST(TestOrtho, TestOrtho)
 }
 
 
-//----------------------------------------------------
-void errorCallback(int error, const char* description)
-//----------------------------------------------------
-{
-    std::cerr << "GLFW error: " << description << std::endl;
-}
-
-
 //---------
 void quit()
 //---------
 {
-    if (g_p_main_window_id)
-        {
-        glfwDestroyWindow(g_p_main_window_id);
-        g_p_main_window_id = 0;
-        //glfwTerminate();
-        }
+	g_GL_context.release();
 }
 
 

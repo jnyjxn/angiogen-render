@@ -4,12 +4,12 @@ SET (GTEST_URL_REPOSITORY "https://github.com/google/googletest/archive/master.z
 SET (GTEST_GIT_REPOSITORY "https://github.com/google/googletest.git" CACHE  STRING "Google Test repository")
 SET (GTEST_GIT_TAG "0fe96607d85cf3a25ac40da369db62bbee2939a5" CACHE STRING "Tag or hash for GTtest git repo")
 
-if(POLICY CMP0048)
-    cmake_policy (SET CMP0048 NEW)
-    PROJECT(googletest-dow VERSION 1.0.0)
-else ()
-    PROJECT(googletest-dow)
-endif()
+#if(POLICY CMP0048)
+#    cmake_policy (SET CMP0048 NEW)
+#    PROJECT(googletest-dow VERSION 1.0.0)
+#else ()
+#    PROJECT(googletest-dow)
+#endif()
 
 
 find_package(Threads REQUIRED)
@@ -19,7 +19,7 @@ include(ExternalProject)
 set(GTEST_DISABLE_PTHREADS ON)
 set(GTEST_FORCE_SHARED_CRT ON)
 
-get_filename_component(GTEST_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}" REALPATH)
+get_filename_component(GTEST_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}" REALPATH)
 SET (GTEST_INSTALL_DIR ${GTEST_INSTALL_DIR}/third_party)
 
 FIND_PACKAGE(Git)
@@ -66,9 +66,6 @@ ENDIF (GIT_FOUND)
 ExternalProject_Get_Property(googletest source_dir)
 set(GTEST_INCLUDE_DIRS ${GTEST_INSTALL_DIR}/include)
 
-# Specify MainTest's link libraries
-list(APPEND GTEST_LIBRARIES gtest gtest_main)
-
 IF (UNIX)
     IF (APPLE)
         set (GTEST_LIBS_DIR "${GTEST_INSTALL_DIR}/lib")
@@ -77,4 +74,17 @@ IF (UNIX)
     ENDIF (APPLE)
 ELSE (UNIX)
     set (GTEST_LIBS_DIR "${GTEST_INSTALL_DIR}/lib")
+ENDIF (UNIX)
+
+
+# Specify MainTest's link libraries
+IF (UNIX)
+    list(APPEND GTEST_LIBRARIES gtest gtest_main)
+ELSE (UNIX)
+    SET (GTEST_LIBRARIES
+      debug gtestd
+      optimized gtest
+      debug gtest_maind
+      optimized gtest_main
+    )
 ENDIF (UNIX)

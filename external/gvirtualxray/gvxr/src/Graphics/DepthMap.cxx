@@ -35,6 +35,9 @@
 #include "depth_map_gl3.frag.h"
 #include "depth_map_gl3.vert.h"
 
+#include "depth_map_gl4.frag.h"
+#include "depth_map_gl4.vert.h"
+
 
 //******************************************************************************
 //  namespace
@@ -130,8 +133,15 @@ void DepthMap::initialize()
     std::string vertex_shader;
     std::string fragment_shader;
 
-    // Use OpenGL 3.x
-    if (useOpenGL3_2OrAbove())
+    // Use OpenGL 4.5
+    if (useOpenGL45())
+    {
+        z_lib_return_code_vertex   = inflate(g_depth_map_gl4_vert, sizeof(g_depth_map_gl4_vert),   &p_vertex_shader);
+        z_lib_return_code_fragment = inflate(g_depth_map_gl4_frag, sizeof(g_depth_map_gl4_frag), &p_fragment_shader);
+        m_depth_shader.setLabels("depth_map_gl4.vert", "depth_map_gl4.frag");
+    }
+    // Use OpenGL 3.2
+    else if (useOpenGL32())
     {
         z_lib_return_code_vertex   = inflate(g_depth_map_gl3_vert, sizeof(g_depth_map_gl3_vert),   &p_vertex_shader);
         z_lib_return_code_fragment = inflate(g_depth_map_gl3_frag, sizeof(g_depth_map_gl3_frag), &p_fragment_shader);

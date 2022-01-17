@@ -35,6 +35,9 @@
 #include "colour_texture_generation_gl3.vert.h"
 #include "colour_texture_generation_gl3.frag.h"
 
+#include "colour_texture_generation_gl4.vert.h"
+#include "colour_texture_generation_gl4.frag.h"
+
 
 //******************************************************************************
 //	constant variables
@@ -180,8 +183,15 @@ void SoftTissueMesh::initialize()
 	    std::string fragment_shader;
 
 		//texture generation shader
-        // Use OpenGL 3.x
-        if (useOpenGL3_2OrAbove())
+        // Use OpenGL 4.5
+        if (useOpenGL45())
+        {
+            z_lib_return_code_vertex   = inflate(g_colour_texture_generation_gl4_vert, sizeof(g_colour_texture_generation_gl4_vert),   &p_vertex_shader);
+            z_lib_return_code_fragment = inflate(g_colour_texture_generation_gl4_frag, sizeof(g_colour_texture_generation_gl4_frag), &p_fragment_shader);
+            m_colour_texture_shader.setLabels("colour_texture_generation_gl4.vert", "colour_texture_generation_gl4.frag");
+        }
+        // Use OpenGL 3.2
+        else if (useOpenGL32())
         {
             z_lib_return_code_vertex   = inflate(g_colour_texture_generation_gl3_vert, sizeof(g_colour_texture_generation_gl3_vert),   &p_vertex_shader);
             z_lib_return_code_fragment = inflate(g_colour_texture_generation_gl3_frag, sizeof(g_colour_texture_generation_gl3_frag), &p_fragment_shader);
@@ -419,4 +429,3 @@ void SoftTissueMesh::defineColourTextureShaderInput(int shader_id)
 	checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
 }
 } // namespace gVirtualXRay
-

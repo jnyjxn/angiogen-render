@@ -25,6 +25,10 @@ set_property(
 
 swig_link_libraries(${module} ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${PYTHON_LIBRARIES})
 
+IF (USE_SUPERBUILD)
+    ADD_DEPENDENCIES(${module} SimpleGVXR)
+ENDIF ()
+
 configure_file(test.py.in ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/test.py)
 FILE(COPY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/test.py
 		DESTINATION ${CMAKE_CURRENT_BINARY_DIR}

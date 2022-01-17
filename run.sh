@@ -7,7 +7,8 @@ sudo docker run \
     --rm \
     --gpus all \
     -p 80:80 \
+    -v $DATA_FOLDER:/data \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -e DISPLAY=$DISPLAY \
-    -v $DATA_FOLDER:/data \
     -it $CONTAINER_NAME:latest
+    # --runtime=nvidia -e NVIDIA_DRIVER_CAPABILITIES=compute,utility -e NVIDIA_VISIBLE_DEVICES=all \

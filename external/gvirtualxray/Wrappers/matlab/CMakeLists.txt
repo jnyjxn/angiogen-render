@@ -21,6 +21,10 @@ set_property(
 
 swig_link_libraries(${module} ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES} ${MATLAB_LIBRARIES})
 
+IF (USE_SUPERBUILD)
+    ADD_DEPENDENCIES(${module} SimpleGVXR)
+ENDIF ()
+
 configure_file(test.m.in ${CMAKE_CURRENT_BINARY_DIR}/test.m)
 FILE(COPY ../welsh-dragon-small.stl DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 FILE(COPY runMatlabTest.sh

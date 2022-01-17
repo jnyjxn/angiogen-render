@@ -1,13 +1,56 @@
-cmake_minimum_required(VERSION 3.12)
+#
+#
+# Copyright (c) 2020 Dr Franck P. Vidal (franck.p.vidal@fpvidal.net),
+# http://www.fpvidal.net/
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation and/or
+# other materials provided with the distribution.
+#
+# 3. Neither the name of the Bangor University nor the names of its contributors
+# may be used to endorse or promote products derived from this software without
+# specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+# THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-PROJECT(gVirtualXRay-Superbuild)
+
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+
+project(gVirtualXRay-Superbuild
+        VERSION 1.1.6
+        DESCRIPTION "gVirtualXRay is focused on developing new software technologies for simulating X-ray images on the graphics processor unit (GPU) using OpenGL. It supports ‘old’ OpenGL implementation as well as modern OpenGL core profile (OpenGL 3.2+). No deprecated function in OpenGL has been used. The library takes care of matrix transformations, matrix stacks, etc."
+        HOMEPAGE_URL https://sourceforge.net/projects/gvirtualxray/
+        LANGUAGES CXX)
 
 
 SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-INCLUDE (gvxrPreverntInSourceBuilds)
 
-# Support for the CTest dashboard testing system
-INCLUDE(CTest)
+
+# Set a default build type if none was specified
+IF (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+      message(STATUS "Setting build type to 'Release' as none was specified.")
+      SET (CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+
+      # Set the possible values of build type for cmake-gui
+      set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+ENDIF ()
+
 
 # C++ version ##################################################################
 set(CMAKE_CXX_STANDARD 11) # C++11
@@ -27,110 +70,116 @@ IF (UNIX)
 ENDIF (UNIX)
 
 
-# for superbuild
+# Make include files in paths like /usr/local/include have preference before
+# files in OSX frameworks.
+SET (CMAKE_FIND_FRAMEWORK "LAST")
+
+
+# For superbuild
 SET (USE_SUPERBUILD ON)
 INCLUDE(ExternalProject)
+#INCLUDE(ConfigureExternalProjects)
 
 
-# Define NOMINMAX ##############################################################
-IF (WIN32)
-	SET (ADD_DEFINITIONS -DNOMINMAX)
-ENDIF (WIN32)
-
-
+# Options ######################################################################
 INCLUDE (gvxr/cmake/options.cmake)
+# SimpleGVXR has no option
 INCLUDE (Wrappers/cmake/options.cmake)
 
+# Enable SimpleGVXR if a wrapper is built
+IF (BUILD_WRAPPERS)
+    MESSAGE (STATUS "BUILD_WRAPPERS is ${BUILD_WRAPPERS}, SimpleGVXR will be built automatically.")
+    SET (BUILD_SIMPLEGVXR ON)
+# No wrapper, SimpleGVXR can still be built as an optional component
+ELSE (BUILD_WRAPPERS)
+    option(BUILD_SIMPLEGVXR    "Build SimpleGVXR module" ON)
+    MESSAGE (STATUS "BUILD_WRAPPERS is ${BUILD_WRAPPERS}, you can still build SimpleGVXR if you'd like (default is ON)")
+ENDIF (BUILD_WRAPPERS)
+
+
+# CTest and Unit testing #######################################################
+# Support for the CTest dashboard testing system
+INCLUDE(CTest)
 
 # Enable the unit tests
-if (BUILD_TESTING)
+IF (BUILD_TESTING)
     ENABLE_TESTING()
-endif()
-
-
-IF ( BUILD_WRAPPERS )
-    MESSAGE (STATUS "Build gvxrWrappers(s): ON")
-    MESSAGE (STATUS "SimpleGVXR will be built (needed by gvxrWrappers)")
-ELSE ( BUILD_WRAPPERS )
-    MESSAGE (STATUS "Build Wrapper(s): OFF")
-ENDIF ( BUILD_WRAPPERS )
+ENDIF (BUILD_TESTING)
 
 
 # Google Test ##################################################################
-OPTION ( USE_SYSTEM_GTEST "Use an external version of GoogleTest. " OFF )
-MARK_AS_ADVANCED ( USE_SYSTEM_GTEST )
-IF ( BUILD_TESTING )
-    IF ( USE_SYSTEM_GTEST )
-        FIND_PACKAGE( GTest REQUIRED )
-    ELSE( USE_SYSTEM_GTEST )
+OPTION (USE_SYSTEM_GTEST "Use an external version of GoogleTest. " OFF)
+MARK_AS_ADVANCED (USE_SYSTEM_GTEST)
+IF (BUILD_TESTING)
+    IF (USE_SYSTEM_GTEST)
+        FIND_PACKAGE(GTest REQUIRED)
+    ELSE(USE_SYSTEM_GTEST)
         INCLUDE(External_GTest)
         MESSAGE (STATUS "Build GTest: ON")
         list(APPEND ${CMAKE_PROJECT_NAME}_DEPENDENCIES GTest)
-
-    ENDIF( USE_SYSTEM_GTEST )
-ENDIF( BUILD_TESTING )
-
-
-INCLUDE(gvxr/cmake/ConfigureExternalProjects.cmake)
+    ENDIF(USE_SYSTEM_GTEST)
+ENDIF (BUILD_TESTING)
 
 
-# gVirtualXRay #################################################################
-OPTION ( USE_SYSTEM_gVirtualXRay "Use an external version of gVirtualXRay. " OFF )
-MARK_AS_ADVANCED ( USE_SYSTEM_gVirtualXRay )
-IF ( USE_SYSTEM_gVirtualXRay )
-    FIND_PACKAGE( gVirtualXRay REQUIRED )
-ELSE( USE_SYSTEM_gVirtualXRay )
-    INCLUDE(External_gVirtualXRay)
-    MESSAGE (STATUS "Build gVirtualXRay: ON")
-    list(APPEND ${CMAKE_PROJECT_NAME}_DEPENDENCIES gVirtualXRay)
+# GLFW ########################################################################
+# GLFW3 is required for either testing, SimpleGVXR or Wrappers
+IF (BUILD_SIMPLEGVXR OR BUILD_WRAPPERS OR BUILD_TESTING)
+    # Use system library
+    IF (USE_SYSTEM_GLFW)
+        FIND_LIBRARY(GLFW3_LIBRARY NAMES glfw3)
 
-    IF ( BUILD_TESTING AND NOT USE_SYSTEM_GTEST )
-        ADD_DEPENDENCIES(gvxr googletest)
-    ENDIF ()
+        IF (GLFW3_LIBRARY)
+            FIND_PACKAGE(glfw3)
+        ENDIF (GLFW3_LIBRARY)
+    ENDIF (USE_SYSTEM_GLFW)
 
-ENDIF( USE_SYSTEM_gVirtualXRay )
+    # The system library was not found
+    # Build GLFW3 instead
+    IF (NOT glfw3_FOUND OR NOT USE_SYSTEM_GLFW)
+        MESSAGE (STATUS "Build GLFW3")
+        #SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
+        INCLUDE(cmake/BuildGlfw.cmake)
+        build_glfw( glfw ${PROJECT_BINARY_DIR} )
 
+        SET (BUILD_GLFW ON)
+    ENDIF (NOT glfw3_FOUND OR NOT USE_SYSTEM_GLFW)
 
-# SimpleGVXR ###################################################################
-OPTION ( USE_SYSTEM_SimpleGVXR "Use an external version of SimpleGVXR. " OFF )
-MARK_AS_ADVANCED ( USE_SYSTEM_SimpleGVXR )
-IF ( USE_SYSTEM_SimpleGVXR )
-    FIND_PACKAGE( SimpleGVXR REQUIRED )
-ELSE( USE_SYSTEM_SimpleGVXR )
-    INCLUDE(External_SimpleGVXR)
-    MESSAGE (STATUS "Build SimpleGVXR: ON")
-
-    list(APPEND ${CMAKE_PROJECT_NAME}_DEPENDENCIES SimpleGVXR)
-
-    IF ( BUILD_TESTING AND NOT USE_SYSTEM_GTEST )
-        ADD_DEPENDENCIES(SimpleGVXR googletest)
-    ENDIF ()
-
-    IF ( NOT USE_SYSTEM_gVirtualXRay )
-        ADD_DEPENDENCIES(SimpleGVXR gvxr)
-    ENDIF ()
-
-ENDIF( USE_SYSTEM_SimpleGVXR )
+    include(cmake/configureGlfw.cmake)
+ENDIF ()
 
 
+ADD_SUBDIRECTORY (gvxr)
 
-IF ( BUILD_WRAPPERS )
+IF (BUILD_GLFW)
+    ADD_DEPENDENCIES(gVirtualXRay glfw)
+ENDIF ()
 
-    INCLUDE(External_Wrappers)
-    MESSAGE (STATUS "Build gvxrWrappers(s): ON")
+# Build SimpleGVXR
+IF (BUILD_SIMPLEGVXR OR BUILD_WRAPPERS)
+    ADD_SUBDIRECTORY (SimpleGVXR)
+ENDIF (BUILD_SIMPLEGVXR OR BUILD_WRAPPERS)
 
-    list(APPEND ${CMAKE_PROJECT_NAME}_DEPENDENCIES Wrappers)
+# Build Wrappers
+IF (BUILD_WRAPPERS)
+    ADD_SUBDIRECTORY (Wrappers)
+ENDIF (BUILD_WRAPPERS)
 
-    IF ( BUILD_TESTING AND NOT USE_SYSTEM_GTEST )
-        ADD_DEPENDENCIES(Wrappers googletest)
-    ENDIF ()
+# Packaging support
+set(CPACK_PACKAGE_VENDOR "Dr Franck P. Vidal @ Bangor University")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_DESCRIPTION})
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENCE.txt")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 
-    IF ( NOT USE_SYSTEM_gVirtualXRay )
-        ADD_DEPENDENCIES(Wrappers gvxr)
-    ENDIF ()
-
-    IF ( NOT USE_SYSTEM_SimpleGVXR )
-        ADD_DEPENDENCIES(Wrappers SimpleGVXR)
-    ENDIF ()
-
-ENDIF ( BUILD_WRAPPERS )
+set(CPACK_SOURCE_GENERATOR "TGZ;ZIP")
+set(CPACK_SOURCE_IGNORE_FILES
+    /.git
+    /.svn
+    /dist
+    /.*build.*
+    /\\\\.DS_Store
+    .swp$
+    .*~
+)

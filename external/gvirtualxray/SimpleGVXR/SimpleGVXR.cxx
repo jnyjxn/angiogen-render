@@ -78,9 +78,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <map>
 #include <vector>
 #include <algorithm>
+#include <cctype> // Needed for std::toupper
+#include <cmath> // Header file for abs
 
 #define GLFW_INCLUDE_GLCOREARB 1
+
+#ifdef HAS_VULKAN
+#define GLFW_INCLUDE_VULKAN
+#endif
+
 #include <GLFW/glfw3.h>
+
+#ifdef HAS_CUDA
+#include <cuda_gl_interop.h>
+#include <thrust/device_vector.h>
+#endif
 
 // To perform the computations of the X-ray simulation
 #ifndef __XRayRenderer_h
@@ -90,11 +102,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // For polygon meshes
 #ifndef __PolygonMesh_h
 #include "gVirtualXRay/PolygonMesh.h"
-#endif
-
-// To initialise GLEW, to define matrix stacks, to define state stacks, etc.
-#ifndef __OpenGLUtilities_h
-#include "gVirtualXRay/OpenGLUtilities.h"
 #endif
 
 // To load a scenegraph
@@ -136,11 +143,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SimpleGVXR.h"
 #endif
 
-// Shaders for rendering
-#include "display_gl2.frag.h"
-#include "display_gl2.vert.h"
-#include "display_gl3.frag.h"
-#include "display_gl3.vert.h"
+#ifndef __Window_h
+#include "Window.h"
+#endif
+
+#ifndef __OpenGLWindow_h
+#include "OpenGLWindow.h"
+#endif
+
+#ifndef __VulkanWindow_h
+#include "VulkanWindow.h"
+#endif
+
+#ifndef __EGLWindow_h
+#include "EGLWindow.h"
+#endif
 
 
 //******************************************************************************
@@ -154,34 +171,14 @@ using namespace std;
 //******************************************************************************
 GLFWwindow* initGLFW(int aWindowID, int aVisibilityFlag);
 
-void createOpenGLContext(int aWindowID);
-
-void framebufferSizeCallback(GLFWwindow* apWindow, int aWidth, int aHeight);
-
-void keyCallback(GLFWwindow* window,
-    int key,
-    int scancode,
-    int action,
-    int mods);
-
-void mouseButtonCallback(GLFWwindow* apWindow,
-    int aButton,
-    int aButtonState,
-    int aModifierKey);
-
-void cursorPosCallback(GLFWwindow* apWindow, double x, double y);
-
-void scrollCallback(GLFWwindow* apWindow, double xoffset, double yoffset);
-
-void render(bool aSceneRotationFlag);
-
-void quit();
 
 void errorCallback(int error, const char* description);
 
+void quit();
+
+
 void initialiseXRayRenderer();
 
-void initViewer();
 
 void computeRotation(gVirtualXRay::MATRIX4& aRotationMatrix,
     int aViewportWidth,
@@ -216,10 +213,10 @@ std::vector<std::vector<float> > gvxrMatrix2Vector(
 //******************************************************************************
 const GLfloat ROTATION_SPEED(2.0);
 
-std::map<int, GLFWwindow*> g_p_window_set;      // The set of windows
+std::map<int, SimpleGVXR::Window*> g_p_window_set;      // The set of windows
 std::vector<int> g_p_window_id_stack;           // The stack of window IDs
 
-const double g_initial_fovy(45);                // Field of view along
+double g_initial_fovy(45);                // Field of view along
                                                 // the y-axis
 double g_initial_near(5.0 * gVirtualXRay::cm);  // Near clipping plane
 double g_initial_far(500.0 * gVirtualXRay::cm); // Far clipping plane
@@ -241,7 +238,6 @@ bool g_detector_up_vector_initialised = false;
 bool g_detector_size_initialised = false;
 bool g_detector_pixel_size_initialised = false;
 bool g_renderer_initialised = false;
-bool g_viewer_initialised = false;
 
 int g_button(-1);
 int g_button_state(-1);
@@ -273,32 +269,7 @@ double g_scale_filter = 1;
 bool g_has_own_gl_context = false;
 
 
-
-
-
-
-
-
-int perturbVertices(const std::string& aLabel) {
-    // Find the mesh
-    gVirtualXRay::SceneGraphNode* p_node = g_p_scene_graph->getNode(aLabel);
-
-    // It has been found
-    if (p_node)
-        {
-        // Set its properties
-        return p_node->getPolygonMesh().getVertexNumber();
-    }
-    // It has not been found
-    else
-        {
-        cerr << "gvxrWarning:\tPolygonMesh " <<
-            aLabel <<
-            " not found in g_p_polygon_mesh_set." <<
-            endl;
-        }
-    return -1;
-}
+std::vector<std::vector<std::vector< float> > > lastest_screenshot;
 
 
 //******************************************************************************
@@ -361,6 +332,43 @@ std::string getVersionOfSimpleGVXR()
     return (std::string(SimpleGVXR_VERSION_STRING));
 }
 
+
+void displayBeam(bool aState)
+{
+    g_display_beam = aState;
+}
+
+
+void displayDetector(bool aState)
+{
+    g_display_detector = aState;
+}
+
+
+void displayNormalVectors(bool aState)
+{
+    g_display_normal_vectors = aState;
+}
+
+
+void useWireframe(bool aState)
+{
+    g_display_wireframe = aState;
+}
+
+
+void useLighing(bool aState)
+{
+    g_use_lighing = aState;
+}
+
+
+void useNegative(bool aState)
+{
+    g_xray_renderer.useNegativeFilteringFlag(aState);
+}
+
+
 //--------------------------------------
 void autoCreateOpenGLContext(bool aFlag)
 //--------------------------------------
@@ -398,7 +406,6 @@ void setSourcePosition(double x,
 
     // Initialise the X-ray renderer if needed and if possible
     initialiseXRayRenderer();
-    initViewer();
 }
 
 //---------------------------------------------------------------------
@@ -432,7 +439,6 @@ void setDetectorPosition(double x,
 
     // Initialise the X-ray renderer if needed and if possible
     initialiseXRayRenderer();
-    initViewer();
 }
 
 //-----------------------------------------------------------------------
@@ -459,7 +465,6 @@ void setDetectorUpVector(double x, double y, double z)
 
     // Initialise the X-ray renderer if needed and if possible
     initialiseXRayRenderer();
-    initViewer();
 }
 
 //---------------------------------------
@@ -547,14 +552,33 @@ std::vector<double> getDetectorSize(const std::string& aUnitOfLength)
     return (detector_size);
 }
 
+
+//--------------------------------
+void clearDetectorEnergyResponse()
+//--------------------------------
+{
+    g_xray_detector.clearEnergyResponse();
+}
+
+
+//---------------------------------------------------------------
+void loadDetectorEnergyResponse(const std::string& aFileName,
+                                const std::string& aUnitOfEnergy)
+//---------------------------------------------------------------
+{
+    g_xray_detector.loadEnergyResponse(aFileName, getUnitOfEnergy(aUnitOfEnergy));
+}
+
+
 //-------------------------------------------------
 void loadMeshFile(const std::string& aLabel,
                   const std::string& aFileName,
-                  const std::string& aUnitOfLength)
+                  const std::string& aUnitOfLength,
+				  bool addToRendererAsInnerSurface)
 //-------------------------------------------------
 {
     // Initialise the X-ray renderer if needed and if possible
-    initialiseXRayRenderer();
+    //initialiseXRayRenderer();
 
     gVirtualXRay::SceneGraphBinder* p_temp = g_p_scene_graph.get();
     if (!p_temp)
@@ -573,7 +597,8 @@ void loadMeshFile(const std::string& aLabel,
     true, true, getUnitOfLength(aUnitOfLength), GL_STATIC_DRAW);
 
     // Add the geometry to the X-ray renderer
-    g_xray_renderer.addInnerSurface(g_p_scene_graph->getNode(aLabel));
+    if (addToRendererAsInnerSurface)
+    	g_xray_renderer.addInnerSurface(g_p_scene_graph->getNode(aLabel));
 }
 
 
@@ -642,6 +667,29 @@ void loadSceneGraph(const std::string& aFileName,
         }
 }
 
+
+unsigned int getNumberOfPrimitives(const std::string& aLabel)
+{
+  // The scenegraph does not exist
+  if (!g_p_scene_graph.get())
+      {
+      return 0;
+      }
+
+  // Get the node
+  gVirtualXRay::SceneGraphNode* p_node = g_p_scene_graph->getNode(aLabel);
+
+  // The node exists
+  if (p_node)
+      {
+      p_node->getPolygonMesh().getTriangleNumber();
+      }
+  // The node does not exist
+  else
+      {
+      return 0;
+      }
+}
 
 void emptyMesh(const std::string& aLabel, const std::string& aParent)
 {
@@ -778,6 +826,105 @@ void makeIsoSurface(const std::string& aLabel,
             gVirtualXRay::VEC3(),
             aParent);
         }
+}
+
+
+//-----------------------------------------------------------
+void makeTriangularMesh(const std::string& aLabel,
+		                const std::vector<float>& aVertexSet,
+						const std::string& aUnitOfLength,
+						const std::string& aParent)
+//-----------------------------------------------------------
+{
+    if (!g_p_scene_graph.get())
+        {
+        // Create a scenegraph
+        g_p_scene_graph.reset(new gVirtualXRay::SceneGraphBinder());
+        }
+
+    gVirtualXRay::SceneGraphNode* p_node = g_p_scene_graph->getNode(aLabel);
+
+    if (p_node)
+        {
+        p_node->setGeometry(gVirtualXRay::PolygonMesh());
+        }
+    else
+        {
+        g_p_scene_graph->addPolygonMesh(
+            aLabel,
+			gVirtualXRay::PolygonMesh(),
+            gVirtualXRay::VEC3(),
+            aParent);
+
+        p_node = g_p_scene_graph->getNode(aLabel);
+        }
+
+    p_node->getPolygonMesh().setInternalData(GL_TRIANGLES,
+    		&aVertexSet,
+             false,
+			 GL_STATIC_DRAW);
+
+    // Change scale and compute bounding box
+    p_node->getPolygonMesh().applyScale(getUnitOfLength(aUnitOfLength));
+}
+
+
+//-------------------------------------------------------------------------
+void makeTriangularMesh(const std::string& aLabel,
+						const std::vector<float>& aVertexSet,
+						const std::vector<int>& aTriangleIndexSet,
+						const std::string& aUnitOfLength,
+						const std::string& aParent)
+//-------------------------------------------------------------------------
+{
+    if (!g_p_scene_graph.get())
+        {
+        // Create a scenegraph
+        g_p_scene_graph.reset(new gVirtualXRay::SceneGraphBinder());
+        }
+
+    gVirtualXRay::SceneGraphNode* p_node = g_p_scene_graph->getNode(aLabel);
+
+    if (p_node)
+        {
+        p_node->setGeometry(gVirtualXRay::PolygonMesh());
+        }
+    else
+        {
+        g_p_scene_graph->addPolygonMesh(
+            aLabel,
+			gVirtualXRay::PolygonMesh(),
+            gVirtualXRay::VEC3(),
+            aParent);
+
+        p_node = g_p_scene_graph->getNode(aLabel);
+        }
+
+    std::vector<unsigned int> p_temp;
+
+    for (std::vector<int>::const_iterator ite(aTriangleIndexSet.begin());
+    		ite != aTriangleIndexSet.end();
+    		++ite)
+    {
+    	if (*ite < 0)
+    	{
+            throw gVirtualXRay::Exception(__FILE__,
+                                          __FUNCTION__,
+                                          __LINE__,
+                                          "The index is negative.");
+    	}
+
+    	p_temp.push_back(*ite);
+    }
+
+    p_node->getPolygonMesh().setInternalData(GL_TRIANGLES,
+			&aVertexSet,
+			&p_temp,
+			false,
+			GL_STATIC_DRAW);
+
+    // Change scale and compute bounding box
+    p_node->getPolygonMesh().applyScale(getUnitOfLength(aUnitOfLength));
 }
 
 
@@ -1494,8 +1641,7 @@ void moveToCenter(const std::string& aLabel)
 void scaleNode(const std::string& aLabel,
                double x,
                double y,
-               double z,
-               const std::string& aUnitOfLength)
+               double z)
 {
     if (g_p_scene_graph.get())
         {
@@ -1505,10 +1651,8 @@ void scaleNode(const std::string& aLabel,
         // It has been found
         if (p_node)
             {
-            double unit_of_length = getUnitOfLength(aUnitOfLength);
             gVirtualXRay::MATRIX4 scaling_matrix =
-            gVirtualXRay::MATRIX4::buildScaleMatrix(x * unit_of_length,
-            y * unit_of_length, z * unit_of_length);
+            gVirtualXRay::MATRIX4::buildScaleMatrix(x, y, z);
 
             // Root node
             if (p_node->getLabel() == "root")
@@ -1756,7 +1900,7 @@ std::vector<std::vector<float> > getRootTransformationMatrix()
 }
 
 
-std::vector<std::vector<float> > getNodeTransformationMatrix(
+std::vector<std::vector<float> > getNodeLocalTransformationMatrix(
         const std::string& aLabel)
 {
     gVirtualXRay::MATRIX4 transformation;
@@ -1770,6 +1914,39 @@ std::vector<std::vector<float> > getNodeTransformationMatrix(
         if (p_node)
             {
             transformation = p_node->getLocalTransformationMatrix();
+            }
+        // It has not been found
+        else
+            {
+            cerr << "gvxrWarning:\tPolygonMesh " <<
+                aLabel <<
+                " not found in g_p_polygon_mesh_set." <<
+                endl;
+            }
+        }
+    else
+        {
+        cerr << "gvxrWarning:\tThe scenegraph is empty." << endl;
+        }
+
+    return (gvxrMatrix2Vector(transformation));
+}
+
+
+std::vector<std::vector<float> > getNodeWorldTransformationMatrix(
+        const std::string& aLabel)
+{
+    gVirtualXRay::MATRIX4 transformation;
+
+    if (g_p_scene_graph.get())
+        {
+        // Find the mesh
+        gVirtualXRay::SceneGraphNode* p_node = g_p_scene_graph->getNode(aLabel);
+
+        // It has been found
+        if (p_node)
+            {
+            transformation = p_node->getWorldTransformationMatrix();
             }
         // It has not been found
         else
@@ -1935,6 +2112,49 @@ void setMixture(const std::string& aLabel, const std::string& aName)
         {
         // Set its properties
         p_node->getPolygonMesh().setMixture(aName);
+        g_xray_renderer.needUpdateSurfacePerMaterial();
+        }
+    // It has not been found
+    else
+        {
+        cerr << "gvxrWarning:\tPolygonMesh " <<
+            aLabel <<
+            " not found in g_p_polygon_mesh_set." <<
+            endl;
+        }
+}
+
+
+//----------------------------------------------------
+void setMixture(const std::string& aLabel,
+                const std::vector<int>& aZNumberSet,
+                const std::vector<double>& aWeightSet)
+//----------------------------------------------------
+{
+    // Find the mesh
+    gVirtualXRay::SceneGraphNode* p_node = g_p_scene_graph->getNode(aLabel);
+
+    // It has been found
+    if (p_node)
+        {
+        // Set its properties
+        std::map<int, double> mixture;
+
+        if (aZNumberSet.size() != aWeightSet.size())
+            {
+            throw gVirtualXRay::Exception(
+                __FILE__,
+                __FUNCTION__,
+                __LINE__,
+                "ERROR: The Z number set and weight set don't have the same size.");
+            }
+
+        for (unsigned int i = 0; i != aZNumberSet.size(); ++i)
+            {
+            mixture[aZNumberSet[i]] = aWeightSet[i];
+            }
+
+        p_node->getPolygonMesh().setMixture(mixture);
         g_xray_renderer.needUpdateSurfacePerMaterial();
         }
     // It has not been found
@@ -2205,34 +2425,48 @@ std::string getMaterialLabel(const std::string& aLabel)
     return std::string();
 }
 
-//-------------------------------------
-void createOpenGLContext(int aWindowID)
-//-------------------------------------
+//-------------------------------------------------
+void createOpenGLContext(int aWindowID,
+		                 int aRendererMajorVersion,
+		                 int aRendererMinorVersion)
+//-------------------------------------------------
 {
-    createWindow(aWindowID, false);
+    createWindow(aWindowID,
+        false,
+        "OpenGL",
+        aRendererMajorVersion,
+        aRendererMinorVersion);
+        cout << "Created EGL Window" << endl;
 }
 
-//---------------------------------------------------
-void createWindow(int aWindowID, int aVisibilityFlag)
-//---------------------------------------------------
+//---------------------------------------------
+void createWindow(int aWindowID,
+		          int aVisibilityFlag,
+				  const std::string& aRenderer,
+	              int aRendererMajorVersion,
+	              int aRendererMinorVersion)
+//---------------------------------------------
 {
     if (!g_p_window_set.size())
         {
         // Make sure all the windows are destroyed
         atexit(quit);
 
-        // Set an error callback
-        glfwSetErrorCallback(errorCallback);
+        if (aRenderer != "EGL")
+        	{
+			// Set an error callback
+			glfwSetErrorCallback(errorCallback);
 
-        // Initialize GLFW
-        if (!glfwInit())
-            {
-            throw gVirtualXRay::Exception(
-                __FILE__,
-                __FUNCTION__,
-                __LINE__,
-                "ERROR: cannot initialise GLFW.");
-            }
+			// Initialize GLFW
+			if (!glfwInit())
+				{
+				throw gVirtualXRay::Exception(
+					__FILE__,
+					__FUNCTION__,
+					__LINE__,
+					"ERROR: cannot initialise GLFW.");
+				}
+			}
         }
 
     if (aWindowID == -1)
@@ -2245,8 +2479,35 @@ void createWindow(int aWindowID, int aVisibilityFlag)
     // The window does not exist
     if (!g_p_window_set[aWindowID])
         {
-        // Create the window
-        GLFWwindow* p_window = initGLFW(aWindowID, aVisibilityFlag);
+    	SimpleGVXR::Window* p_window = 0;
+
+    	// Create the window
+    	std::string renderer = aRenderer;
+    	for (auto& c: renderer) c = std::toupper(c);
+
+    	if (aRenderer == "OPENGL")
+    	{
+    		p_window = new SimpleGVXR::OpenGLWindow(aVisibilityFlag, aRendererMajorVersion, aRendererMinorVersion);
+    	}
+    	else if (aRenderer == "VULKAN")
+        {
+        	p_window = new SimpleGVXR::VulkanWindow(aVisibilityFlag);
+        }
+#ifdef HAS_EGL
+    	else if (aRenderer == "EGL")
+        {
+        	p_window = new SimpleGVXR::EGLWindow();
+        }
+#endif // HAS_EGL
+        else
+    	{
+    		std::string error_message = "ERROR: Unknown renderer (";
+    		error_message += aRenderer;
+    		error_message += ")";
+
+    		throw gVirtualXRay::Exception(__FILE__, __FUNCTION__, __LINE__,
+    				error_message);
+    	}
 
         // The window has been created
         if (p_window)
@@ -2256,12 +2517,6 @@ void createWindow(int aWindowID, int aVisibilityFlag)
 
             // Register its ID
             g_p_window_id_stack.push_back(aWindowID);
-
-            // Initialise GLEW
-            initialiseGLEW();
-
-            // Initialise OpenGL
-            initShader();
 
             // Initialise the X-ray renderer if needed and if possible
             initialiseXRayRenderer();
@@ -2277,7 +2532,7 @@ void createWindow(int aWindowID, int aVisibilityFlag)
 
             // Delete the empty record that may have been created
             // in g_p_window_set
-            std::map<int, GLFWwindow*>::iterator it;
+            std::map<int, SimpleGVXR::Window*>::iterator it;
             it = g_p_window_set.find(aWindowID);
             if (it != g_p_window_set.end())
                 {
@@ -2327,8 +2582,7 @@ void setWindowSize(int aWidth, int aHeight, int aWindowID)
             {
             if (search->second)
                 {
-                glfwSetWindowSize(search->second, aWidth, aHeight);
-                framebufferSizeCallback(search->second, aWidth, aHeight);
+                search->second->setWindowSize(aWidth, aHeight);
                 }
             }
         else
@@ -2372,35 +2626,7 @@ void displayScene(bool aSceneRotationFlag, int aWindowID)
             {
             if (search_window->second || g_has_own_gl_context)
                 {
-                // Show the window if needed
-                if (!g_has_own_gl_context)
-                    {
-                    if (!glfwGetWindowAttrib(search_window->second,
-                            GLFW_VISIBLE))
-                        {
-                        glfwShowWindow(search_window->second);
-                        }
-
-                    // Make the window's context current
-                    glfwMakeContextCurrent(search_window->second);
-
-                    // Clear the buffers
-                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-                    initViewer();
-                    }
-
-                // Display the 3D scene
-                render(aSceneRotationFlag);
-
-                // Make sure all the OpenGL code is done
-                glFinish();
-
-                // Swap front and back buffers
-                if (!g_has_own_gl_context)
-                    {
-                    glfwSwapBuffers(search_window->second);
-                    }
+                search_window->second->displayScene(aSceneRotationFlag);
                 }
 
             // Poll for and process events
@@ -2450,15 +2676,7 @@ void renderLoop(int aWindowID)
             {
             if (search_window->second)
                 {
-                g_run_loop = true;
-
-                // Launch the event loop
-                while (!glfwWindowShouldClose(search_window->second) &&
-                        g_run_loop)
-                    {
-                    // Render here
-                    displayScene(true, aWindowID);
-                    }
+                search_window->second->renderLoop();
                 }
             }
         else
@@ -2502,7 +2720,7 @@ void showWindow(int aWindowID)
             {
             if (search->second)
                 {
-                glfwShowWindow(search->second);
+                search->second->showWindow();
                 }
             }
         else
@@ -2544,7 +2762,7 @@ void hideWindow(int aWindowID)
             {
             if (search->second)
                 {
-                glfwHideWindow(search->second);
+                search->second->hideWindow();
                 }
             }
         else
@@ -2553,6 +2771,110 @@ void hideWindow(int aWindowID)
                 " not found." << endl;
             }
         }
+}
+
+
+//----------------------------------------------------------------------
+void setWindowBackGroundColour(float R, float G, float B, int aWindowID)
+//----------------------------------------------------------------------
+{
+    // Change the colour of the last window that has been created
+    if (aWindowID == -1)
+        {
+        // Nothing to do
+        if (g_p_window_id_stack.empty() || g_p_window_set.empty())
+            {
+            cerr << "gvxrWarning:\tNo active window to hide." << endl;
+            }
+        // Change the colour of the last window that has been created
+        else
+            {
+            // Set the target window
+            aWindowID = g_p_window_id_stack.back();
+            }
+        }
+
+    // There is a window to change
+    if (aWindowID != -1)
+        {
+        // Find the window
+        auto search = g_p_window_set.find(aWindowID);
+
+        // It has been found
+        if (search != g_p_window_set.end())
+            {
+            if (search->second)
+                {
+                search->second->setWindowBackGroundColour(R, G, B);
+                }
+            }
+        else
+            {
+            cerr << "gvxrWarning:\tWindow " << aWindowID <<
+                " not found." << endl;
+            }
+        }
+}
+
+//---------------------------------------------------------------------
+void setWindowBackGroundColor(float R, float G, float B, int aWindowID)
+//---------------------------------------------------------------------
+{
+    setWindowBackGroundColour(R, G, B, aWindowID);
+}
+
+
+//----------------------------------------------------------------------------------
+const std::vector<std::vector<std::vector< float> > >& takeScreenshot(int aWindowID)
+//----------------------------------------------------------------------------------
+{
+    // Retrieve the window
+    if (aWindowID == -1)
+        {
+        // Nothing to do
+        if (g_p_window_id_stack.empty() || g_p_window_set.empty())
+            {
+            cerr << "gvxrWarning:\tNo active window to hide." << endl;
+            }
+        // Change the colour of the last window that has been created
+        else
+            {
+            // Set the target window
+            aWindowID = g_p_window_id_stack.back();
+            }
+        }
+
+    // There is a window to capture
+    if (aWindowID != -1)
+        {
+        // Find the window
+        auto search = g_p_window_set.find(aWindowID);
+
+        // It has been found
+        if (search != g_p_window_set.end())
+            {
+            if (search->second)
+                {
+                search->second->takeScreenshot();
+                }
+            }
+        else
+            {
+            cerr << "gvxrWarning:\tWindow " << aWindowID <<
+                " not found." << endl;
+            }
+        }
+
+    // Return the image
+    return lastest_screenshot;
+}
+
+
+//--------------------------------------------------------------------------
+const std::vector<std::vector<std::vector< float> > >& getLatestScreenshot()
+//--------------------------------------------------------------------------
+{
+    return lastest_screenshot;
 }
 
 //-------------------------------
@@ -2587,7 +2909,7 @@ void destroyWindow(int aWindowID)
             cout << "gvxrStatus:\tDestroy window " << aWindowID <<
                 "(" << search_window->second << ")" << endl;
 
-            if (search_window->second) glfwDestroyWindow(search_window->second);
+            if (search_window->second) search_window->second->destroyWindow();
 
             g_p_window_set.erase(search_window);
             }
@@ -2788,6 +3110,15 @@ std::vector<double> getPhotonCountEnergyBins()
     return (p_temp);
 }
 
+
+//-----------------------------------------
+double getTotalEnergyWithDetectorResponse()
+//-----------------------------------------
+{
+    return g_xray_renderer.getTotalEnergyWithDetectorResponse();
+}
+
+
 //--------------------------------------------------
 void saveLastXRayImage(const std::string& aFileName,
                        bool useCompression)
@@ -2920,9 +3251,9 @@ void disableArtifactFiltering(void)
     disableArtefactFiltering();
 }
 
-//----------------------------
-std::vector<std::vector<float> > computeXRayImage()
-//----------------------------
+//---------------------------------------------------------------------------
+std::vector<std::vector<float> > computeXRayImage(bool anIntegrateEnergyFlag)
+//---------------------------------------------------------------------------
 {
     // There is no OpenGL context
     if (!g_has_own_gl_context
@@ -2934,7 +3265,7 @@ std::vector<std::vector<float> > computeXRayImage()
     // The renderer is ready
     if (g_xray_renderer.isReady()) {
     // Compute the X-ray image
-    g_xray_renderer.computeImage(g_sample_rotation_matrix);
+    g_xray_renderer.computeImage(g_sample_rotation_matrix, anIntegrateEnergyFlag);
     }
     // The renderer is not ready
     else {
@@ -2943,6 +3274,7 @@ std::vector<std::vector<float> > computeXRayImage()
 
     return (getVectorImage2D(g_xray_renderer.getEnergyFluence()));
 }
+
 
 //--------------------------------------------
 std::vector<std::vector<float> > computeLBuffer(const std::string& aLabel)
@@ -3089,113 +3421,7 @@ std::vector<float> getImageRow(const std::vector<std::vector<float> >& anImage,
     return (anImage[j]);
 }
 
-//---------------------------------------
-GLFWwindow* initGLFW(int aWindowID, int aVisibilityFlag)
-//---------------------------------------
-{
-    string window_title = "gVirtualXRay -- Window " + to_string(aWindowID);
-    GLFWwindow* p_window = 0;
 
-    // Set the version of OpenGL that is required
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-    glfwWindowHint(GLFW_DEPTH_BITS, 24);
-
-    if (aVisibilityFlag) {
-    glfwWindowHint(GLFW_VISIBLE, true);
-    } else {
-    glfwWindowHint(GLFW_VISIBLE, false);
-    }
-
-    // Enable anti-aliasing
-    glfwWindowHint(GLFW_SAMPLES, 4);
-
-    // Create a windowed mode window and its OpenGL context
-    p_window = glfwCreateWindow(500, 500, window_title.data(), 0, 0);
-
-    // Window has be created
-    if (p_window) {
-    // Make the window's context current
-    glfwMakeContextCurrent(p_window);
-
-    framebufferSizeCallback(p_window, 500, 500);
-
-    // Initialize GLFW callbacks
-    glfwSetKeyCallback(p_window, keyCallback);
-    glfwSetMouseButtonCallback(p_window, mouseButtonCallback);
-    glfwSetCursorPosCallback(p_window, cursorPosCallback);
-    glfwSetScrollCallback(p_window, scrollCallback);
-    glfwSetFramebufferSizeCallback(p_window, framebufferSizeCallback);
-    }
-
-    return (p_window);
-}
-
-//-----------------------------------------------------------------------
-void framebufferSizeCallback(GLFWwindow* apWindow, int width, int height)
-//-----------------------------------------------------------------------
-{
-    if (height == 0) {
-    // Prevent divide by 0
-    height = 1;
-    }
-
-    int x(0), y(0), w(width), h(height);
-    std::cout << x << " " << y << " " << w << " " << h << std::endl;
-    double screen_aspect_ratio(double(width) / double(height));
-    glViewport(x, y, w, h);
-
-    initViewer();
-
-    gVirtualXRay::loadPerspectiveProjectionMatrix(g_initial_fovy,
-    screen_aspect_ratio, g_initial_near, g_initial_far);
-
-    gVirtualXRay::loadLookAtModelViewMatrix(0.0, 0.0, g_zoom, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0);
-}
-
-//----------------------------------
-void keyCallback(GLFWwindow* window,
-                 int key,
-                 int scancode,
-                 int action,
-             int mods)
-//----------------------------------
-{
-    if (action == GLFW_PRESS) {
-    switch (key) {
-    case GLFW_KEY_Q:
-    case GLFW_KEY_ESCAPE:
-    g_run_loop = false;
-    break;
-
-    case GLFW_KEY_B:
-    g_display_beam = !g_display_beam;
-    break;
-
-    case GLFW_KEY_W:
-    g_display_wireframe = !g_display_wireframe;
-    break;
-
-    case GLFW_KEY_N:
-    g_xray_renderer.useNegativeFilteringFlag(
-    !g_xray_renderer.getNegativeFilteringFlag());
-    break;
-
-    case GLFW_KEY_L:
-    g_use_lighing = !g_use_lighing;
-    break;
-
-    case GLFW_KEY_D:
-    g_display_detector = !g_display_detector;
-    break;
-
-    case GLFW_KEY_V:
-    g_display_normal_vectors = !g_display_normal_vectors;
-    break;
-    }
-    }
-}
 
 void startArcBallRotation(double x, double y) {
     g_last_x_position = x;
@@ -3229,9 +3455,37 @@ void scrollCallback(double xoffset, double yoffset) {
     g_use_arc_ball = false;
     g_zoom += yoffset * gVirtualXRay::cm;
 
-    gVirtualXRay::loadLookAtModelViewMatrix(0.0, 0.0, g_zoom, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0);
+    gVirtualXRay::loadLookAtModelViewMatrix(0.0, 0.0, g_zoom,
+                                            0.0, 0.0, 0.0,
+                                            0.0, 1.0, 0.0);
     }
+}
+
+
+void setZoom(float aZoomValue)
+{
+    g_zoom = aZoomValue;
+
+    gVirtualXRay::loadLookAtModelViewMatrix(0.0, 0.0, g_zoom,
+                                            0.0, 0.0, 0.0,
+                                            0.0, 1.0, 0.0);
+}
+
+
+float getZoom()
+{
+    return g_zoom;
+}
+
+
+void setSceneRotationMatrix(const std::vector<double>& aRotationMatrix)
+{
+    g_scene_rotation_matrix = gVirtualXRay::Matrix4x4<GLfloat>(aRotationMatrix);
+}
+
+std::vector<double> getSceneRotationMatrix()
+{
+    return g_scene_rotation_matrix.getAsVector();
 }
 
 //--------------------------------------------
@@ -3296,285 +3550,6 @@ void rotateModelView(double anAngle, double x, double y, double z)
     gVirtualXRay::g_current_modelview_matrix *= rotation_matrix;
 }
 
-//----------------------------------
-void render(bool aSceneRotationFlag)
-//----------------------------------
-{
-    try
-    {
-        // Enable back face culling
-        gVirtualXRay::pushEnableDisableState (GL_CULL_FACE);
-        glEnable(GL_CULL_FACE);
-        glCullFace (GL_BACK);
-
-        // Enable the shader
-        gVirtualXRay::pushShaderProgram();
-        g_display_shader.enable();
-        GLint shader_id(g_display_shader.getProgramHandle());
-
-        // Check the status of OpenGL and of the current FBO
-        gVirtualXRay::checkFBOErrorStatus(__FILE__, __FUNCTION__, __LINE__);
-        gVirtualXRay::checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
-
-        // Store the current transformation matrix
-        gVirtualXRay::pushModelViewMatrix();
-
-        // Rotate the sample
-        if (aSceneRotationFlag)
-        {
-            gVirtualXRay::g_current_modelview_matrix *= g_scene_rotation_matrix;
-        }
-
-        GLuint handle(0);
-        handle = glGetUniformLocation(shader_id, "g_projection_matrix");
-        glUniformMatrix4fv(handle, 1, GL_FALSE,
-        gVirtualXRay::g_current_projection_matrix.get());
-        gVirtualXRay::checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
-
-        handle = glGetUniformLocation(shader_id, "g_modelview_matrix");
-        glUniformMatrix4fv(handle, 1, GL_FALSE,
-        gVirtualXRay::g_current_modelview_matrix.get());
-        gVirtualXRay::checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
-
-        gVirtualXRay::MATRIX4 normal_matrix(
-        gVirtualXRay::g_current_modelview_matrix);
-        handle = glGetUniformLocation(shader_id, "g_normal_matrix");
-        glUniformMatrix3fv(handle, 1, GL_FALSE, normal_matrix.get3x3());
-        gVirtualXRay::checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
-
-        GLint lighting;
-        if (g_use_lighing)
-        {
-            lighting = 1;
-        }
-        else
-        {
-            lighting = 0;
-        }
-        handle = glGetUniformLocation(shader_id, "g_use_lighting");
-        glUniform1iv(handle, 1, &lighting);
-        gVirtualXRay::checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
-
-        // Store the current transformation matrix
-        gVirtualXRay::pushModelViewMatrix();
-
-        gVirtualXRay::g_current_modelview_matrix *= g_sample_rotation_matrix;
-
-        // Look for all the meshes in the scenegraph
-        std::vector<gVirtualXRay::SceneGraphNode*> p_temp_pull;
-        p_temp_pull.push_back(g_p_scene_graph->getNode("root"));
-
-        while (p_temp_pull.size())
-        {
-            // Get the last node
-            gVirtualXRay::SceneGraphNode* p_node = p_temp_pull.back();
-
-            // Remove the node
-            p_temp_pull.pop_back();
-
-            // Add its children
-            for (unsigned int i = 0; i < p_node->getNumberOfChildren(); ++i)
-            {
-                p_temp_pull.push_back(&p_node->getChild(i));
-            }
-
-            // Add its geometry
-            gVirtualXRay::PolygonMesh& mesh = p_node->getPolygonMesh();
-            if (mesh.getVertexNumber())
-            {
-                // Store the current transformation matrix
-                gVirtualXRay::pushModelViewMatrix();
-
-                gVirtualXRay::g_current_modelview_matrix *=
-                p_node->getWorldTransformationMatrix();
-
-                gVirtualXRay::applyModelViewMatrix();
-
-                // Set the colour of the sample
-                handle = glGetUniformLocation(shader_id, "material_ambient");
-                glUniform4fv(handle, 1, mesh.getMaterial().getAmbientColour());
-                gVirtualXRay::checkOpenGLErrorStatus(__FILE__,
-                                                     __FUNCTION__,
-                                                     __LINE__);
-
-                handle = glGetUniformLocation(shader_id, "material_diffuse");
-                glUniform4fv(handle, 1, mesh.getMaterial().getDiffuseColour());
-                gVirtualXRay::checkOpenGLErrorStatus(__FILE__,
-                                                     __FUNCTION__,
-                                                     __LINE__);
-
-                handle = glGetUniformLocation(shader_id, "material_specular");
-                glUniform4fv(handle, 1, mesh.getMaterial().getSpecularColour());
-                gVirtualXRay::checkOpenGLErrorStatus(__FILE__,
-                                                     __FUNCTION__,
-                                                     __LINE__);
-
-                handle = glGetUniformLocation(shader_id, "material_shininess");
-                GLfloat shininess = mesh.getMaterial().getShininess();
-                glUniform1fv(handle, 1, &shininess);
-                gVirtualXRay::checkOpenGLErrorStatus(__FILE__,
-                                                     __FUNCTION__,
-                                                     __LINE__);
-
-                // Display the sample
-                if (g_display_wireframe)
-                {
-                    mesh.displayWireFrame();
-                }
-                else
-                {
-                    mesh.display();
-                }
-
-                if (g_display_normal_vectors)
-                {
-                    int line_width;
-                    glGetIntegerv(GL_LINE_WIDTH, &line_width);
-                    glLineWidth(3);
-
-                    if (mesh.getVertexNormalNumber())
-                    {
-                        mesh.displayVertexNormal();
-                    }
-
-                    if (mesh.getFaceNormalNumber())
-                    {
-                        mesh.displayFaceNormal();
-                    }
-                    glLineWidth(line_width);
-                }
-
-                // Restore the current transformation matrix
-                gVirtualXRay::popModelViewMatrix();
-            }
-        }
-
-        // Restore the current transformation matrix
-        gVirtualXRay::popModelViewMatrix();
-
-        // Set the colour of the source
-        {
-            const GLfloat material_ambient[] = {0.0, 0.39225, 0.39225, 1.0};
-            const GLfloat material_diffuse[] = {0.0, 0.70754, 0.70754, 1.0};
-            const GLfloat material_specular[] = {0.0, 0.708273, 0.708273, 1.0};
-            const GLfloat material_shininess = 50.2;
-
-            handle = glGetUniformLocation(shader_id, "material_ambient");
-            glUniform4fv(handle, 1, &material_ambient[0]);
-            gVirtualXRay::checkOpenGLErrorStatus(__FILE__,
-                                                 __FUNCTION__,
-                                                 __LINE__);
-
-            handle = glGetUniformLocation(shader_id, "material_diffuse");
-            glUniform4fv(handle, 1, &material_diffuse[0]);
-            gVirtualXRay::checkOpenGLErrorStatus(__FILE__,
-                                                 __FUNCTION__,
-                                                 __LINE__);
-
-            handle = glGetUniformLocation(shader_id, "material_specular");
-            glUniform4fv(handle, 1, &material_specular[0]);
-            gVirtualXRay::checkOpenGLErrorStatus(__FILE__,
-                                                 __FUNCTION__,
-                                                 __LINE__);
-
-            handle = glGetUniformLocation(shader_id, "material_shininess");
-            glUniform1fv(handle, 1, &material_shininess);
-            gVirtualXRay::checkOpenGLErrorStatus(__FILE__,
-                                                 __FUNCTION__,
-                                                 __LINE__);
-        }
-
-        {
-            // Define the light colours here
-            GLfloat light_global_ambient[] = { 0.2, 0.2, 0.2, 1.0 };
-            GLfloat light_ambient[] = { 0.3, 0.3, 0.3, 1.0 };
-            GLfloat light_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
-            GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 };
-
-            handle = glGetUniformLocation(shader_id, "light_global_ambient");
-            glUniform4fv(handle, 1, &light_global_ambient[0]);
-            gVirtualXRay::checkOpenGLErrorStatus(__FILE__,
-                                                 __FUNCTION__,
-                                                 __LINE__);
-
-            handle = glGetUniformLocation(shader_id, "light_ambient");
-            glUniform4fv(handle, 1, &light_ambient[0]);
-            gVirtualXRay::checkOpenGLErrorStatus(__FILE__,
-                                                 __FUNCTION__,
-                                                 __LINE__);
-
-            handle = glGetUniformLocation(shader_id, "light_diffuse");
-            glUniform4fv(handle, 1, &light_diffuse[0]);
-            gVirtualXRay::checkOpenGLErrorStatus(__FILE__,
-                                                 __FUNCTION__,
-                                                 __LINE__);
-
-            handle = glGetUniformLocation(shader_id, "light_specular");
-            glUniform4fv(handle, 1, &light_specular[0]);
-            gVirtualXRay::checkOpenGLErrorStatus(__FILE__,
-                                                 __FUNCTION__,
-                                                 __LINE__);
-
-            gVirtualXRay::VEC3 light_position(0, 0, g_zoom);
-            handle = glGetUniformLocation(shader_id, "light_position");
-            glUniform4f(handle, light_position.getX(), light_position.getY(),
-            light_position.getZ(), 1.0);
-            gVirtualXRay::checkOpenGLErrorStatus(__FILE__,
-                                                 __FUNCTION__,
-                                                 __LINE__);
-        }
-
-        // Display the source
-        g_xray_detector.displaySource();
-
-        // Disable back face culling
-        glDisable(GL_CULL_FACE);
-
-        // Display the X-Ray image
-        if (g_display_detector)
-        {
-            g_xray_renderer.display(true, true, false, g_shift_filter,
-            g_scale_filter);
-        }
-
-        // Display the beam
-        if (g_display_beam)
-        {
-            const GLfloat material_ambient[] = { 0.75, 0, 0.5, 0.3 };
-            handle = glGetUniformLocation(shader_id, "material_ambient");
-            glUniform4fv(handle, 1, &material_ambient[0]);
-            gVirtualXRay::checkOpenGLErrorStatus(__FILE__, __FUNCTION__,
-            __LINE__);
-
-            lighting = 0;
-            handle = glGetUniformLocation(shader_id, "g_use_lighting");
-            glUniform1iv(handle, 1, &lighting);
-            gVirtualXRay::checkOpenGLErrorStatus(__FILE__, __FUNCTION__,
-            __LINE__);
-
-            g_xray_detector.displayBeam();
-        }
-
-        // Disable the shader
-        gVirtualXRay::popShaderProgram();
-
-        // Restore the current transformation matrix
-        gVirtualXRay::popModelViewMatrix();
-
-        // Restore the attributes
-        gVirtualXRay::popEnableDisableState();
-
-        // Check the status of OpenGL and of the current FBO
-        gVirtualXRay::checkFBOErrorStatus(__FILE__, __FUNCTION__, __LINE__);
-        gVirtualXRay::checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
-    }
-    // Catch exception if any
-    catch (const std::exception& error)
-    {
-        std::cerr << error.what() << std::endl;
-    }
-}
-
 
 //---------
 void quit()
@@ -3590,91 +3565,6 @@ void errorCallback(int error, const char* description)
 {
     // Display the error in the terminal
     std::cerr << "GLFW error: " << description << std::endl;
-}
-
-//---------------
-void initShader()
-//---------------
-{
-    std::cout << "OpenGL renderer:   " << glGetString(GL_RENDERER) << std::endl;
-    std::cout << "OpenGL version:    " << glGetString(GL_VERSION) << std::endl;
-    std::cout << "OpenGL vender:     " << glGetString(GL_VENDOR) << std::endl;
-
-    gVirtualXRay::checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
-
-    // Enable the Z-buffer
-    glEnable (GL_DEPTH_TEST);
-    gVirtualXRay::checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
-
-    // Set the background colour
-    glClearColor(0.5, 0.5, 0.5, 1.0);
-    gVirtualXRay::checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
-
-    glEnable (GL_MULTISAMPLE);
-    gVirtualXRay::checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
-
-    // Initialise the shaders
-    char* p_vertex_shader(0);
-    char* p_fragment_shader(0);
-
-    int z_lib_return_code_vertex(0);
-    int z_lib_return_code_fragment(0);
-
-    std::string vertex_shader;
-    std::string fragment_shader;
-
-    // Display shader
-    if (gVirtualXRay::useOpenGL3_2OrAbove())
-    {
-        z_lib_return_code_vertex = gVirtualXRay::inflate(
-            g_display_gl3_vert,
-            sizeof(g_display_gl3_vert),
-            &p_vertex_shader);
-
-        z_lib_return_code_fragment = gVirtualXRay::inflate(
-            g_display_gl3_frag,
-            sizeof(g_display_gl3_frag),
-            &p_fragment_shader);
-
-        g_display_shader.setLabels("display_gl3.vert", "display_gl3.frag");
-    }
-    else
-    {
-        z_lib_return_code_vertex = gVirtualXRay::inflate(
-            g_display_gl2_vert,
-            sizeof(g_display_gl2_vert),
-            &p_vertex_shader);
-
-        z_lib_return_code_fragment = gVirtualXRay::inflate(
-            g_display_gl2_frag,
-            sizeof(g_display_gl2_frag),
-            &p_fragment_shader);
-
-        g_display_shader.setLabels("display_gl2.vert", "display_gl2.frag");
-    }
-
-    vertex_shader = p_vertex_shader;
-    fragment_shader = p_fragment_shader;
-
-    delete[] p_vertex_shader;
-    delete[] p_fragment_shader;
-
-    p_vertex_shader = 0;
-    p_fragment_shader = 0;
-
-    if (z_lib_return_code_vertex <= 0 ||
-        z_lib_return_code_fragment <= 0 ||
-        !vertex_shader.size() ||
-        !fragment_shader.size())
-    {
-        throw gVirtualXRay::Exception(__FILE__, __FUNCTION__, __LINE__,
-            "Cannot decode the shader using ZLib.");
-    }
-
-    g_display_shader.loadSource(vertex_shader, fragment_shader);
-    gVirtualXRay::checkOpenGLErrorStatus(__FILE__, __FUNCTION__, __LINE__);
-
-    initViewer();
 }
 
 
@@ -3720,60 +3610,37 @@ void lookAt(double eye_x,
     lookAtY, lookAtZ, upX, upY, upZ);
 }
 
+
 //---------------------------
 void initialiseXRayRenderer()
 //---------------------------
 {
-    if (g_beam_shape_initialised && g_beam_energy_initialised
-    && g_source_position_initialised && g_detector_position_initialised
-    && g_detector_up_vector_initialised && g_detector_size_initialised
-    && g_detector_pixel_size_initialised) {
-    // The renderer is not initialised
-    if (!g_renderer_initialised) {
-    cout << "INIT RENDER" << endl;
-    // Initialise the renderer
-    g_xray_renderer.initialise(gVirtualXRay::XRayRenderer::OPENGL,
-    GL_RGB32F, &g_xray_detector, &g_xray_beam);
-
-    g_xray_renderer.disableArtifactFilteringOnCPU();
-    g_xray_renderer.enableArtifactFilteringOnGPU();
-    g_xray_renderer.useNegativeFilteringFlag(false);
-    g_renderer_initialised = true;
-    }
-    }
-    initViewer();
-}
-
-//---------------
-void initViewer()
-//---------------
-{
-    if (!g_viewer_initialised && g_xray_detector.getSourcePositionSet().size())
+    if (g_beam_shape_initialised &&
+        g_beam_energy_initialised &&
+        g_source_position_initialised &&
+        g_detector_position_initialised &&
+        g_detector_up_vector_initialised &&
+        g_detector_size_initialised &&
+        g_detector_pixel_size_initialised)
     {
-        float distance_source_object =
-            g_xray_detector.getSourcePositionSet()[0].length();
-
-        float distance_detector_object =
-            g_xray_detector.getDetectorPosition().length();
-
-        float distance = std::max(distance_detector_object,
-                                  distance_source_object);
-
-        float half_fovy = (M_PI * g_initial_fovy / 2.0) / 180.0;
-
-        g_zoom = atan(half_fovy) * distance;
-
-        if (g_p_scene_graph.get())
+        // The renderer is not initialised
+        if (!g_renderer_initialised)
         {
-            g_initial_near = (g_p_scene_graph->getBoundingBox().second -
-                g_p_scene_graph->getBoundingBox().first).length() / 5.0;
+            cout << "INIT RENDER" << endl;
+            // Initialise the renderer
+            g_xray_renderer.initialise(gVirtualXRay::XRayRenderer::OPENGL,
+                GL_RGB32F,
+                &g_xray_detector,
+                &g_xray_beam);
 
-            g_viewer_initialised = true;
+            g_xray_renderer.disableArtifactFilteringOnCPU();
+            g_xray_renderer.enableArtifactFilteringOnGPU();
+            g_xray_renderer.useNegativeFilteringFlag(false);
+            g_renderer_initialised = true;
         }
-
-        g_initial_far = g_zoom * 50.0;
     }
 }
+
 
 //----------------------------------------------------------
 void computeRotation(gVirtualXRay::MATRIX4& aRotationMatrix,
@@ -4154,6 +4021,66 @@ double getMuFromHU(double HU,
 
 
 
+std::vector<float> rayIntersect(const std::string& aLabel,
+    double aRayOriginX, double aRayOriginY, double aRayOriginZ,
+    double aRayDirectionX, double aRayDirectionY, double aRayDirectionZ)
+{
+    std::vector<float> p_intersection_set;
+    gVirtualXRay::SceneGraphNode* p_source_node = 0;
+
+    // The scenegraph does not exist
+    if (g_p_scene_graph.get())
+    {
+        // Find the node. It must exist
+        gVirtualXRay::SceneGraphNode* p_source_node =
+            g_p_scene_graph->getNode(aLabel);
+
+        // The node exists
+        if (p_source_node)
+        {
+            // Ray tracing
+            std::map<float, gVirtualXRay::VEC3> p_intersection_full_set = p_source_node->rayIntersect(
+            		gVirtualXRay::VEC3(aRayOriginX, aRayOriginY, aRayOriginZ),
+			        gVirtualXRay::VEC3(aRayDirectionX, aRayDirectionY, aRayDirectionZ),
+			        gVirtualXRay::MATRIX4());
+
+			// Iterate through the map
+			for (std::map<float, gVirtualXRay::VEC3>::const_iterator ite = p_intersection_full_set.begin();
+			         ite != p_intersection_full_set.end();
+			         ++ite)
+			{
+    			p_intersection_set.push_back(ite->first);
+			}
+        }
+    }
+
+    // The source does not exist
+    if (!p_source_node)
+    {
+        cerr <<
+            "gvxrWarning:\tPolygonMesh " <<
+            aLabel <<
+            " not found in g_p_polygon_mesh_set." <<
+            endl;
+    }
+
+    return p_intersection_set;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void setShiftFilter(double aValue) {
     g_shift_filter = aValue;
 }
@@ -4201,6 +4128,141 @@ double computeRMSE(const std::vector<std::vector<std::vector<float> > >& aRefere
 }
 
 
+double getMean(const std::vector<float>& anImage)
+{
+    double avg = 0.0;
+
+#pragma omp parallel for reduction( + : avg )
+    for (int i = 0; i < anImage.size(); ++i)
+    {
+        avg += anImage[i];
+    }
+
+    return avg / anImage.size();
+}
+
+double getStddev(const std::vector<float>& anImage)
+{
+    double avg = getMean(anImage);
+    double stddev = 0.0;
+
+#pragma omp parallel for reduction( + : stddev )
+    for (unsigned int i = 0; i < anImage.size(); ++i)
+    {
+        stddev += std::pow(anImage[i] - avg, 2);
+    }
+
+    return sqrt(stddev / anImage.size());
+}
+
+
+double getStddev(const std::vector<float>& anImage, double avg)
+{
+    double stddev = 0.0;
+
+#pragma omp parallel for reduction( + : stddev )
+    for (unsigned int i = 0; i < anImage.size(); ++i)
+    {
+        stddev += std::pow(anImage[i] - avg, 2);
+    }
+
+    return sqrt(stddev / anImage.size());
+}
+
+double computeZNCC(const std::vector<float>& aReferenceImage, const std::vector<float>& aTestImage)
+{
+    double avg_ref = getMean(aReferenceImage);
+    double avg_test = getMean(aTestImage);
+
+    double stddev_ref = getStddev(aReferenceImage, avg_ref);
+    double stddev_test = getStddev(aTestImage, avg_test);
+
+    double zncc = 0.0;
+#pragma omp parallel for reduction( + : zncc )
+    for (int i = 0; i < aReferenceImage.size(); ++i)
+    {
+        zncc += (aReferenceImage[i] - avg_ref) * (aTestImage[i] - avg_test);
+    }
+
+    return (zncc / (stddev_ref * stddev_test)) / aReferenceImage.size();
+}
+
+
+double computeRMSE(const std::vector<float>& aReferenceImage, const std::vector<float>& aTestImage, bool normalise)
+{
+    double sse = 0.0;
+
+    if (normalise)
+    {
+        double avg_ref = getMean(aReferenceImage);
+        double avg_test = getMean(aTestImage);
+
+        double stddev_ref = getStddev(aReferenceImage, avg_ref);
+        double stddev_test = getStddev(aTestImage, avg_test);
+
+#pragma omp parallel for reduction( + : sse )
+        for (int i = 0; i < aReferenceImage.size(); ++i)
+        {
+            sse += std::pow(((aReferenceImage[i] - avg_ref) / stddev_ref) -
+                ((aTestImage[i] - avg_test) / stddev_test), 2);
+        }
+    }
+    else
+    {
+#pragma omp parallel for reduction( + : sse )
+        for (int i = 0; i < aReferenceImage.size(); ++i)
+        {
+            sse += std::pow(aReferenceImage[i] - aTestImage[i], 2);
+        }
+    }
+
+    return sqrt(sse / aReferenceImage.size());
+}
+
+
+std::vector<float> g_p_ref_image;
+std::vector<float> g_p_test_image;
+
+double computeRMSE(bool normalise)
+{
+    return computeRMSE(g_p_ref_image, g_p_test_image, normalise);
+}
+
+
+double computeZNCC()
+{
+    return computeZNCC(g_p_ref_image, g_p_test_image);
+}
+
+
+void loadReference(const std::vector<float>& aReferenceImage)
+{
+    g_p_ref_image = aReferenceImage;
+}
+
+
+void loadTest(const std::vector<float>& aTestImage)
+{
+    g_p_test_image = aTestImage;
+}
+
+
+void lineariseTest(float aThreshold, float aScalingFactor)
+{
+#pragma omp parallel for
+    for (int i = 0; i < g_p_test_image.size(); ++i)
+    {
+        if (g_p_test_image[i] < aThreshold)
+        {
+            g_p_test_image[i] = aThreshold;
+        }
+
+        g_p_test_image[i] = -log(g_p_test_image[i]);
+        g_p_test_image[i] *= aScalingFactor;
+    }
+}
+
+
 float getMinValue(const std::vector<std::vector<std::vector<float> > >& aImage)
 {
     return getImage(aImage).getMinValue();
@@ -4210,4 +4272,22 @@ float getMinValue(const std::vector<std::vector<std::vector<float> > >& aImage)
 float getMaxValue(const std::vector<std::vector<std::vector<float> > >& aImage)
 {
     return getImage(aImage).getMaxValue();
+}
+
+
+void FBO2Thrust(unsigned int aFBO, void* aThrustVector, int anOffset)
+{
+#ifndef HAS_CUDA
+    throw gVirtualXRay::Exception(__FILE__,
+                                  __FUNCTION__,
+                                  __LINE__,
+                                  "CUDA is not supported.");
+#else
+    cudaGLSetGLDevice(0);
+    struct cudaGraphicsResource *fbo_cuda;
+    cudaGraphicsGLRegisterBuffer(&fbo_cuda, g_xray_renderer.getFboId(aFBO), cudaGraphicsMapFlagsReadOnly);
+
+
+    thrust::device_ptr<float4>* p_device_data = static_cast<thrust::device_ptr<float4>*>(aThrustVector);
+#endif
 }

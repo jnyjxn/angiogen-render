@@ -30,9 +30,10 @@ ExternalProject_Add(assimp
   CMAKE_GENERATOR ${CMAKE_GEN}
   CMAKE_ARGS
       ${LOCAL_CMAKE_BUILD_OPTIONS}
-      
+
       -DCMAKE_INSTALL_PREFIX:PATH=${ASSIMP_INSTALL_DIR}
       -DASSIMP_BUILD_TESTS:BOOL=OFF
+      -DBUILD_SHARED_LIBS:BOOL=OFF
       -DBUILD_TESTING:BOOL=OFF
       -DASSIMP_BUILD_ASSIMP_TOOLS:BOOL=OFF
       -DASSIMP_BUILD_DOCBOOK_MANPAGES:BOOL=OFF
@@ -53,15 +54,32 @@ if (WIN32 AND ${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
 	FILE (WRITE ${staging_prefix}/${install_prefix}-build/code/Debug/assimp-${ASSIMP_MSVC_VERSION}-mt.pdb "Create a file to pass the install process")
 
     SET(ASSIMP_LIBRARIES
-        ${ASSIMP_INSTALL_DIR}/lib/assimp-${ASSIMP_MSVC_VERSION}-mt.lib
-        ${ASSIMP_INSTALL_DIR}/lib/IrrXML.lib
-	    optimized
-        ${ASSIMP_INSTALL_DIR}/lib/zlibstatic.lib
-	    debug
-        ${ASSIMP_INSTALL_DIR}/lib/zlibstaticd.lib
 
-		CACHE FILEPATH "ASSIMP's libraries." FORCE
+        optimized
+            ${ASSIMP_INSTALL_DIR}/lib/assimp-${ASSIMP_MSVC_VERSION}-mt.lib
+        debug
+            ${staging_prefix}/${install_prefix}-build/code/Debug/assimp-${ASSIMP_MSVC_VERSION}-mt.lib
+
+        optimized
+            ${ASSIMP_INSTALL_DIR}/lib/IrrXML.lib
+        debug
+            ${staging_prefix}/${install_prefix}-build/contrib/irrXML/Debug/IrrXML.lib
+
+        optimized
+            ${ASSIMP_INSTALL_DIR}/lib/zlibstatic.lib
+        debug
+            ${ASSIMP_INSTALL_DIR}/lib/zlibstaticd.lib
+
+        CACHE FILEPATH "ASSIMP's libraries." FORCE
     )
+
+    install(FILES ${staging_prefix}/${install_prefix}-build/code/Debug/assimp-${ASSIMP_MSVC_VERSION}-mt.lib
+            CONFIGURATIONS Debug
+            RUNTIME DESTINATION ${INSTALL_DIR}/third_party/lib/Debug)
+
+    install(FILES ${staging_prefix}/${install_prefix}-build/code/Release/assimp-${ASSIMP_MSVC_VERSION}-mt.lib
+            CONFIGURATIONS Release
+            RUNTIME DESTINATION ${INSTALL_DIR}/third_party/lib/Release)
 else ()
     SET(ASSIMP_LIBRARIES
         ${ASSIMP_INSTALL_DIR}/lib/libassimp.a

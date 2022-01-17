@@ -1,0 +1,4 @@
+gvxr-suite 1.1.6
+- gvxr-core-1.1.6
+- SimpleGVXR-1.0.6
+- Wrappers-1.0.5

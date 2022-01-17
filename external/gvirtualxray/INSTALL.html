@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Dr Franck P. Vidal" />
+  <title>How to compile and install gVirtualXRay Suite</title>
+  <style>
+    html {
+      line-height: 1.7;
+      font-family: Georgia, serif;
+      font-size: 20px;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 40em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      word-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 1em;
+      }
+    }
+    @media print {
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin-top: 1.7em;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.7em;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1.7em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1.7em 0 1.7em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      font-style: italic;
+    }
+    code {
+      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
+      background-color: #f0f0f0;
+      font-size: 85%;
+      margin: 0;
+      padding: .2em .4em;
+    }
+    pre {
+      line-height: 1.5em;
+      padding: 1em;
+      background-color: #f0f0f0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin-top: 1.7em;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+    }
+    th, td {
+      border-bottom: 1px solid lightgray;
+      padding: 1em 3em 1em 0;
+    }
+    header {
+      margin-bottom: 6em;
+      text-align: center;
+    }
+    nav a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">How to compile and install gVirtualXRay Suite</h1>
+<p class="author">Dr Franck P. Vidal</p>
+<p class="date">6th Jul 2021</p>
+</header>
+<h1 id="how-to-compile-and-install-gvirtualxray-suite">How to compile and install gVirtualXRay Suite</h1>
+<h2 id="requirements">Requirements</h2>
+<p>Make sure you have:</p>
+<ul>
+<li>CMake 3.12 or newer (see <a href="http://www.cmake.org/">http://www.cmake.org/</a>);</li>
+<li>A C++ compiler; and</li>
+<li>A GPU that supports OpenGL (integrated GPUs are fine).</li>
+</ul>
+<h3 id="for-gnulinux">For GNU/Linux</h3>
+<p>The examples below are for openSUSE Leap but you can adapt them for your own distro.</p>
+<ol type="1">
+<li>You need cmake and a compiler:</li>
+</ol>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="fu">sudo</span> zypper in cmake-full gcc-c++</span></code></pre></div>
+<ol start="2" type="1">
+<li>You need some system libraires:</li>
+</ol>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="fu">sudo</span> zypper in libX11-devel <span class="kw">\</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                     <span class="ex">libXi-devel</span> <span class="kw">\</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                     <span class="ex">libXcursor-devel</span> <span class="kw">\</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>                     <span class="ex">libXinerama-devel</span> <span class="kw">\</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>                     <span class="ex">libXrandr-devel</span> <span class="kw">\</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>                     <span class="ex">libXxf86vm-devel</span> <span class="kw">\</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>                     <span class="ex">glu-devel</span></span></code></pre></div>
+<ol start="3" type="1">
+<li>For unit testing, SimpleGVXR and wrappers (optional):</li>
+</ol>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="fu">sudo</span> zypper in Mesa-libEGL1 Mesa-libEGL-devel libgbm1 libgbm-devel</span></code></pre></div>
+<ol start="4" type="1">
+<li>For unit wrappers (optional):</li>
+</ol>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="fu">sudo</span> zypper in swig <span class="kw">\</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>        <span class="ex">ruby-devel</span> <span class="kw">\</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>        <span class="ex">tcl-devel</span> <span class="kw">\</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        <span class="ex">python3</span> python3-devel <span class="kw">\</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        <span class="ex">java-11-openjdk</span> <span class="kw">\</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>        <span class="ex">octave-devel</span> <span class="kw">\</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        <span class="ex">R-core</span> R-base  R-core-devel R-base-devel</span></code></pre></div>
+<h3 id="mac-os-x">Mac OS X:</h3>
+<ol type="1">
+<li>Install XCode from the Mac App Store.</li>
+<li>Install the Command Line Tools package via the Terminal application using</li>
+</ol>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="ex">xcode-select</span> --install command.</span></code></pre></div>
+<ol start="3" type="1">
+<li>Install CMake from <a href="https://cmake.org/download/">https://cmake.org/download/</a></li>
+<li>For Wrappers, you may want to install SWIG and Python 3. I use homebrew for that purpose, see <a href="https://brew.sh/">https://brew.sh/</a></li>
+</ol>
+<h3 id="microsoft-windows">Microsoft Windows</h3>
+<ol type="1">
+<li>Install Visual Studio from <a href="https://visualstudio.microsoft.com/vs/">https://visualstudio.microsoft.com/vs/</a>
+<ul>
+<li><strong>Make sure to select the C++ language</strong></li>
+</ul></li>
+<li>Install CMake from <a href="https://cmake.org/download/">https://cmake.org/download/</a></li>
+<li>You may want to install a git client, e.g. <a href="https://git-scm.com/download/win">https://git-scm.com/download/win</a></li>
+<li>You may want to install a SVN client, e.g. TortoiseSVN from <a href="https://tortoisesvn.net/downloads.html">https://tortoisesvn.net/downloads.html</a></li>
+<li>For Wrappers, you may want to install Python 3 from <a href="https://www.python.org/downloads/">https://www.python.org/downloads/</a> Make sure to install the development libraries.</li>
+</ol>
+<h2 id="download-the-latest-version-of-the-source-code">Download the latest version of the source code</h2>
+<ul>
+<li>The latest release <a href="https://sourceforge.net/projects/gvirtualxray/files/1.1/gVirtualXRay-1.1.5-Source.zip/download">(gVirtualXRay-1.1.5-Source.zip)</a> available at <a href="https://sourceforge.net/projects/gvirtualxray/files/1.1/gVirtualXRay-1.1.5-Source.zip/download">https://sourceforge.net/projects/gvirtualxray/files/1.1/gVirtualXRay-1.1.5-Source.zip/download</a> or</li>
+<li>The latest version from SVN at <a href="https://svn.code.sf.net/p/gvirtualxray/code/trunk">https://svn.code.sf.net/p/gvirtualxray/code/trunk</a></li>
+</ul>
+<h2 id="installation-from-the-source-code">Installation from the source code</h2>
+<h3 id="gnulinux-and-mac-os-x">GNU/Linux and Mac OS X</h3>
+<p>Assuming the system is ready.</p>
+<ol type="1">
+<li>Open a terminal and choose where the binaries should be installed. <strong>It must be a directory where you can write.</strong> If you can’t, make sure you use <code>sudo make</code> rather than <code>make</code> in Steps 5 and 6. In the example below, I install it in my home directory in <code>gvxr-install</code>.</li>
+</ol>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="bu">export</span> <span class="va">GVXR_INSTALL_DIR=$HOME</span>/gvirtualxray-install</span></code></pre></div>
+<ol start="2" type="1">
+<li>go in the directory where you want to build the gVirtualXRay, e.g.</li>
+</ol>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="fu">mkdir</span> ~/gvxr</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    $ <span class="bu">cd</span> ~/gvxr</span></code></pre></div>
+<ol start="3" type="1">
+<li>Download the latest release:</li>
+</ol>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="fu">wget</span> https://sourceforge.net/projects/gvirtualxray/files/1.1/gVirtualXRay-1.1.5-Source.zip/download</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    $ <span class="fu">mv</span> download gVirtualXRay-1.1.5-Source.zip</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    $ <span class="fu">unzip</span> gVirtualXRay-1.1.5-Source.zip</span></code></pre></div>
+<ol start="4" type="1">
+<li>Create a directory where the binaries will be created and go in this directory.</li>
+</ol>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="fu">mkdir</span> gvxr-bin</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    $ <span class="bu">cd</span> gvxr-bin</span></code></pre></div>
+<ol start="5" type="1">
+<li>Configure the project using CMake. Use <code>cmake</code>, <code>ccmake</code> or <code>cmake-gui</code> depending on you preferences. <code>ccmake</code> and <code>cmake-gui</code> are interactive.
+<ul>
+<li><code>cmake</code>:</li>
+</ul>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>     $ <span class="fu">cmake</span> <span class="kw">\</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DCMAKE_BUILD_TYPE</span>:STRING=Release <span class="kw">\</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DCMAKE_INSTALL_PREFIX</span>:STRING=<span class="va">$GVXR_INSTALL_DIR</span> <span class="kw">\</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DBUILD_TESTING</span>:BOOL=ON <span class="kw">\</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DBUILD_WRAPPER_CSHARP</span>:BOOL=ON <span class="kw">\</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DBUILD_WRAPPER_JAVA</span>:BOOL=ON <span class="kw">\</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DBUILD_WRAPPER_OCTAVE</span>:BOOL=ON <span class="kw">\</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DBUILD_WRAPPER_PERL</span>:BOOL=ON <span class="kw">\</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DBUILD_WRAPPER_PYTHON3</span>:BOOL=ON <span class="kw">\</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DBUILD_WRAPPER_R</span>:BOOL=ON <span class="kw">\</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DBUILD_WRAPPER_RUBY</span>:BOOL=ON <span class="kw">\</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DBUILD_WRAPPER_TCL</span>:BOOL=ON <span class="kw">\</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-S</span> .. <span class="kw">\</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-B</span> <span class="va">$PWD</span></span></code></pre></div>
+<ul>
+<li><code>ccmake</code>:</li>
+</ul>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>     $ <span class="ex">ccmake</span> <span class="kw">\</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DCMAKE_BUILD_TYPE</span>:STRING=Release <span class="kw">\</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DCMAKE_INSTALL_PREFIX</span>:STRING=<span class="va">$GVXR_INSTALL_DIR</span> <span class="kw">\</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-S</span> .. <span class="kw">\</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-B</span> <span class="va">$PWD</span></span></code></pre></div>
+<ul>
+<li><code>cmake-gui</code>:</li>
+</ul>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>     $ <span class="ex">ccmake</span> <span class="kw">\</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DCMAKE_BUILD_TYPE</span>:STRING=Release <span class="kw">\</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-DCMAKE_INSTALL_PREFIX</span>:STRING=<span class="va">$GVXR_INSTALL_DIR</span> <span class="kw">\</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-S</span> .. <span class="kw">\</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-B</span> <span class="va">$PWD</span></span></code></pre></div></li>
+<li>Compile the project.</li>
+</ol>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="fu">make</span> -j16</span></code></pre></div>
+<p>I used a parallel build with 16 jobs as I got 16 cores in my CPU. Adjust <code>-j</code> depending on your computer. Once the project is made, it is also installed. 7. Run the unit tests (optional)</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="fu">make</span> test</span></code></pre></div>
+<ol start="8" type="1">
+<li>Install</li>
+</ol>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="fu">make</span> install</span></code></pre></div>
+<p>or at your own risk as <code>root</code> using:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="fu">sudo</span> make install</span></code></pre></div>
+<p>If you built the python wrapper, add its path to <code>PYTHONPATH</code>:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="va">PYTHONPATH=$GVXR_INSTALL_DIR</span>/gvxrWrapper-1.0.5/python3:<span class="va">$PYTHONPATH</span></span></code></pre></div>
+<p>And to make it permanent:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>    $ <span class="bu">echo</span> <span class="st">&quot;&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$HOME</span>/.bashrc</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    $ <span class="bu">echo</span> <span class="st">&quot;################################################################################&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$HOME</span>/.bashrc</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    $ <span class="bu">echo</span> <span class="st">&quot;# Install gvxrPython3 in PYTHONPATH&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$HOME</span>/.bashrc</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    $ <span class="bu">echo</span> export PYTHONPATH=<span class="va">$GVXR_INSTALL_DIR</span>/gvxrWrapper-1.0.5/python3:<span class="dt">\$</span>PYTHONPATH <span class="op">&gt;&gt;</span> <span class="va">$HOME</span>/.bashrc</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    $ <span class="bu">echo</span> <span class="st">&quot;################################################################################&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$HOME</span>/.bashrc</span></code></pre></div>
+<h3 id="summary-of-all-the-commands">Summary of all the commands:</h3>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GVXR_INSTALL_DIR=$HOME</span>/gvirtualxray-install</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> ~/gvxr</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/gvxr</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> https://sourceforge.net/projects/gvirtualxray/files/1.1/gVirtualXRay-1.1.5-Source.zip/download</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="fu">mv</span> download gVirtualXRay-1.1.5-Source.zip</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="fu">unzip</span> gVirtualXRay-1.1.5-Source.zip</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> gvxr-bin</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> gvxr-bin</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="fu">cmake</span> <span class="kw">\</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>    <span class="ex">-DCMAKE_BUILD_TYPE</span>:STRING=Release <span class="kw">\</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>    <span class="ex">-DCMAKE_INSTALL_PREFIX</span>:STRING=<span class="va">$GVXR_INSTALL_DIR</span> <span class="kw">\</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>    <span class="ex">-DBUILD_TESTING</span>:BOOL=ON <span class="kw">\</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>    <span class="ex">-DBUILD_WRAPPER_CSHARP</span>:BOOL=OFF <span class="kw">\</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>    <span class="ex">-DBUILD_WRAPPER_JAVA</span>:BOOL=OFF <span class="kw">\</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>    <span class="ex">-DBUILD_WRAPPER_OCTAVE</span>:BOOL=OFF <span class="kw">\</span></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>    <span class="ex">-DBUILD_WRAPPER_PERL</span>:BOOL=OFF <span class="kw">\</span></span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>    <span class="ex">-DBUILD_WRAPPER_PYTHON3</span>:BOOL=ON <span class="kw">\</span></span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>    <span class="ex">-DBUILD_WRAPPER_R</span>:BOOL=OFF <span class="kw">\</span></span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>    <span class="ex">-DBUILD_WRAPPER_RUBY</span>:BOOL=OFF <span class="kw">\</span></span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>    <span class="ex">-DBUILD_WRAPPER_TCL</span>:BOOL=OFF <span class="kw">\</span></span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>    <span class="ex">-S</span> .. <span class="kw">\</span></span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>    <span class="ex">-B</span> <span class="va">$PWD</span></span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> -j16</span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test</span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> install</span>
+<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PYTHONPATH=$GVXR_INSTALL_DIR</span>/gvxrWrapper-1.0.5/python3:PYTHONPATH</span>
+<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$HOME</span>/.bashrc</span>
+<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;################################################################################&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$HOME</span>/.bashrc</span>
+<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;# Install gvxrPython3 in PYTHONPATH&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$HOME</span>/.bashrc</span>
+<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> PYTHONPATH=<span class="va">$GVXR_INSTALL_DIR</span>/gvxrWrapper-1.0.5/python3:<span class="dt">\$</span>PYTHONPATH <span class="op">&gt;&gt;</span> <span class="va">$HOME</span>/.bashrc</span>
+<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;################################################################################&quot;</span> <span class="op">&gt;&gt;</span> <span class="va">$HOME</span>/.bashrc</span></code></pre></div>
+<h3 id="for-windows">For Windows</h3>
+<p>I recommand to use <strong>64 bits</strong> for all the components, including for <strong>Python 3</strong>.</p>
+<ol type="1">
+<li>Download and extract gVirtualXRay’s code from <a href="https://sourceforge.net/projects/gvirtualxray/files/1.1/gVirtualXRay-1.1.5-Source.zip/download">https://sourceforge.net/projects/gvirtualxray/files/1.1/gVirtualXRay-1.1.5-Source.zip/download</a>.</li>
+<li>Open CMake’s gui.</li>
+</ol>
+<figure>
+<img src="screenshots/cmake0.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<figure>
+<img src="screenshots/cmake1.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<ol start="3" type="1">
+<li>Select where the source code is. This is the top directory of the repository that contains CMakeLists.txt.</li>
+</ol>
+<figure>
+<img src="screenshots/cmake2.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<ol start="4" type="1">
+<li>Select where the binaries are going to be compiled. It CANNOT be a sub-directory of the source directory chosen in the previous step.</li>
+</ol>
+<figure>
+<img src="screenshots/cmake3.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<ol start="5" type="1">
+<li>Press configure, then choose which compiler you want to use and which architecture. I used Visual Studio 15 2017’s native compilers, and x64 (for 64 bits).</li>
+</ol>
+<figure>
+<img src="screenshots/cmake4.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<ol start="6" type="1">
+<li>Click on <code>Configure</code>. There’ll be an error, but don’t worry about it.</li>
+</ol>
+<figure>
+<img src="screenshots/cmake5.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<ol start="7" type="1">
+<li>Search for <code>install</code>.</li>
+</ol>
+<figure>
+<img src="screenshots/cmake6.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<ol start="8" type="1">
+<li>Change the variable <code>CMAKE_INSTALL_PREFIX</code> into a path where you are allowed to write. Click on configure. If it does not work, change the path and make sure you have write privilege for that path.</li>
+</ol>
+<figure>
+<img src="screenshots/cmake7.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<ol start="9" type="1">
+<li>If you want to build a wrapper, e.g. for Python 3, go to <code>BUILD</code> and tick the right option(s) (in my case <code>BUILD_PYTHON£_WRAPPER</code>). Now you can click on <code>Configure</code>, then <code>Generate</code>, then <code>Open Project</code>.</li>
+</ol>
+<figure>
+<img src="screenshots/cmake8.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<ol start="10" type="1">
+<li>It will open Visual Studio. Change Debug into Release.</li>
+</ol>
+<figure>
+<img src="screenshots/vcpp1.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<ol start="11" type="1">
+<li>Do a right click on <code>BUILD_ALL</code> or press the <code>F7</code> key to build the project.</li>
+</ol>
+<figure>
+<img src="screenshots/vcpp1.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<ol start="12" type="1">
+<li>Go and make some coffee, it’s gonna take a bit of time… At the end, in the output, you should see something like</li>
+</ol>
+<pre><code>========== Build: 4 succeeded, ...</code></pre>
+<h4 id="installation-directory-content-in-windows">Installation directory content in Windows</h4>
+<p>On Windows, you Should see 4 or 5 directories in the installation directory depending on wrappers:</p>
+<ul>
+<li>bin</li>
+<li>third_party
+<ul>
+<li>include</li>
+<li>lib (Windows) or lib64 (GNU/Linux and Mac OS X???)</li>
+</ul></li>
+<li>gVirtualXRay-1.1.5
+<ul>
+<li>Bin2C.cmake</li>
+<li>CreateHeaderFiles.cmake</li>
+<li>gVirtualXRayConfig.cmake</li>
+<li>include</li>
+<li>lib</li>
+<li>LICENSE.txt</li>
+<li>test</li>
+<li>third_party</li>
+<li>UsegVirtualXRay.cmake</li>
+</ul></li>
+<li>SimpleGVXR-1.0.4
+<ul>
+<li>include</li>
+<li>lib</li>
+<li>SimpleGVXR-doc.i</li>
+<li>SimpleGVXRConfig.cmake</li>
+<li>test</li>
+<li>UseSimpleGVXR.cmake</li>
+</ul></li>
+<li>gvxrWrapper-1.0.5
+<ul>
+<li>data</li>
+<li>python3</li>
+</ul></li>
+</ul>
+<h3 id="installation-directory-content-in-gnulinux-and-mac-os-x">Installation directory content in GNU/Linux and Mac OS X</h3>
+<p>On Unixes, you Should see 3 or 4 directories in the installation directory depending on wrappers:</p>
+<ul>
+<li>third_party
+<ul>
+<li>include</li>
+<li>lib (Windows and Mac OS X) or lib64 (GNU/Linux)</li>
+</ul></li>
+<li>gVirtualXRay-1.1.5
+<ul>
+<li>Bin2C.cmake</li>
+<li>CreateHeaderFiles.cmake</li>
+<li>gVirtualXRayConfig.cmake</li>
+<li>include</li>
+<li>lib</li>
+<li>LICENSE.txt</li>
+<li>test</li>
+<li>third_party</li>
+<li>UsegVirtualXRay.cmake</li>
+</ul></li>
+<li>SimpleGVXR-1.0.4
+<ul>
+<li>include</li>
+<li>lib</li>
+<li>SimpleGVXR-doc.i</li>
+<li>SimpleGVXRConfig.cmake</li>
+<li>test</li>
+<li>UseSimpleGVXR.cmake</li>
+</ul></li>
+<li>gvxrWrapper-1.0.5
+<ul>
+<li>data</li>
+<li>python3</li>
+</ul></li>
+</ul>
+<h2 id="test-the-python-wrapper">Test the Python wrapper</h2>
+<ol type="1">
+<li>Go to <code>gvxrWrapper-1.0.5/python3</code>,</li>
+<li>Execute the test script. You should see something like:</li>
+</ol>
+<p><img src="screenshots/test-python1.png" alt="Illustration" /> The X-ray image is displayed using linear, log and power law colour scales using Matplotlib.</p>
+<ol start="3" type="1">
+<li>Press <code>&lt;Q&gt;</code> to close this window and the real-time viewer will open:</li>
+</ol>
+<figure>
+<img src="screenshots/test-python2.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<ol start="4" type="1">
+<li>Use the mouse wheel to zoom-out:</li>
+</ol>
+<figure>
+<img src="screenshots/test-python3.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<ol start="5" type="1">
+<li>Use the mouse left button and move the mouse around to adjust the view:</li>
+</ol>
+<figure>
+<img src="screenshots/test-python4.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<ol start="6" type="1">
+<li>Press <code>&lt;B&gt;</code> to hide/show the X-ray beam:</li>
+</ol>
+<figure>
+<img src="screenshots/test-python5.png" alt="Illustration" /><figcaption aria-hidden="true">Illustration</figcaption>
+</figure>
+<ol start="7" type="1">
+<li>Press <code>&lt;W&gt;</code> to view the 3-D object in solid/wireframe mode:</li>
+</ol>
+<p><img src="screenshots/test-python6.png" alt="Illustration" /><img src="screenshots/test-python7.png" alt="Illustration" /></p>
+<ol start="8" type="1">
+<li>You can also press <code>&lt;N&gt;</code> to display the X-ray image in negative or positive and <code>&lt;H&gt;</code> to hide/show the X-ray detector.</li>
+<li>Press <code>&lt;Q&gt;</code> or <code>&lt;ESC&gt;</code> to exit. When the script ends, there’ll be two new files:</li>
+</ol>
+<ul>
+<li><code>xray_image-0.mha</code>: contains the X-ray image. MHA fies can be viewed with the popular scientific image viewer tool <a href="https://imagej.net/Fiji/">ImageJ/Fiji</a>.</li>
+<li><code>lbuffer-0.mha</code>: contains the length of X-rays crossed in the 3-D object.</li>
+</ul>
+<ol start="10" type="1">
+<li>If you want to create your own simulations, have a look at the script. You can find it at <a href="https://sourceforge.net/p/gvirtualxray/code/HEAD/tree/trunk/Wrappers/python3/test.py">https://sourceforge.net/p/gvirtualxray/code/HEAD/tree/trunk/Wrappers/python3/test.py</a>.</li>
+</ol>
+</body>
+</html>

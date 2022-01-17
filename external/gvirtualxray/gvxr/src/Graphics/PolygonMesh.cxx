@@ -517,6 +517,55 @@ void PolygonMesh::loadSTLFile(bool aMoveToCentreFlag,
                               int aBufferUsageHing)
 //---------------------------------------------------------
 {
+    unsigned int occurence_of_solid = 0;
+    unsigned int occurence_of_vertex = 0;
+
+    // Open the file in reading more
+    std::ifstream input_stream(m_filename.c_str());
+    std::string line;
+
+    // The file is not open
+    if (!input_stream.is_open())
+        {
+        throw FileDoesNotExistException(__FILE__, __FUNCTION__, __LINE__,
+                m_filename);
+        }
+    
+    // Read the file
+    while(getline(input_stream, line))
+        {
+        if (line.find("solid", 0) != std::string::npos) ++occurence_of_solid;
+        if (line.find("vertex", 0) != std::string::npos) ++occurence_of_vertex;
+        }
+
+    // This is an ASCII file
+    if (occurence_of_vertex * occurence_of_solid) 
+        loadASCIISTLFile(aMoveToCentreFlag,
+                         anAutoComputeNormalFlag,
+                         aPrintDebugInfoFlag,
+                         aCreateVBOFlag,
+                         aScale,
+                         aBufferUsageHing);
+    // This is a binary file
+    else
+        loadBinarySTLFile(aMoveToCentreFlag,
+                          anAutoComputeNormalFlag,
+                          aPrintDebugInfoFlag,
+                          aCreateVBOFlag,
+                          aScale,
+                          aBufferUsageHing);
+}
+
+
+//---------------------------------------------------------------
+void PolygonMesh::loadASCIISTLFile(bool aMoveToCentreFlag,
+                                   bool anAutoComputeNormalFlag,
+                                   bool aPrintDebugInfoFlag,
+                                   bool aCreateVBOFlag,
+                                   RATIONAL_NUMBER aScale,
+                                   int aBufferUsageHing)
+//---------------------------------------------------------------
+{
     // Reset the data
     reset();
 
@@ -531,7 +580,99 @@ void PolygonMesh::loadSTLFile(bool aMoveToCentreFlag,
                 m_filename);
         }
 
-    char* p_data(0);
+    struct stat stat_buf;
+    int rc = stat(m_filename.c_str(), &stat_buf);
+
+    if (rc != 0)
+        {
+        throw FileDoesNotExistException(__FILE__, __FUNCTION__, __LINE__,
+                m_filename);
+        }
+
+    // Temp storage of vertex data
+    std::vector<double> p_vertices;
+
+    // Read the file
+    std::string line;
+    while(getline(input_stream, line))
+        {       
+        if (line.find("vertex", 0) != std::string::npos)
+            {
+            std::stringstream temp_line;
+            std::string temp_string;
+            double temp_coord_x;
+            double temp_coord_y;
+            double temp_coord_z;
+            temp_line << line;
+            temp_line >> temp_string >> temp_coord_x >> temp_coord_y >> temp_coord_z;
+            
+            p_vertices.push_back(temp_coord_x);
+            p_vertices.push_back(temp_coord_y);
+            p_vertices.push_back(temp_coord_z);
+            }
+        }
+
+    // Load the data
+    setInternalData(GL_TRIANGLES,
+			&p_vertices,
+			aCreateVBOFlag,
+			aBufferUsageHing);
+
+    // Change scale and compute bounding box
+    applyScale(aScale);
+    computeBoundingBox();
+
+    // Move the object to the center
+    if (aMoveToCentreFlag)
+        {
+        moveToCentre();
+        }
+
+    // Display extra debug info
+    if (aPrintDebugInfoFlag)
+        {
+        std::cout << "file_name:\t" << m_filename <<
+                "\tnb_faces:\t" << getFaceNumber() <<
+                "\tnb_vertices:\t" << m_number_of_vertices <<
+                "\tbounding_box (in cm):\t(" <<
+                        m_local_min_corner.getX() / cm << ", " <<
+                        m_local_min_corner.getY() / cm << ", " <<
+                        m_local_min_corner.getZ() / cm << ")\t(" <<
+                        m_local_max_corner.getX() / cm << ", " <<
+                        m_local_max_corner.getY() / cm << ", " <<
+                        m_local_max_corner.getZ() / cm << ")" << std::endl;
+        }
+
+    // Create the VBO
+    if (aCreateVBOFlag)
+        {
+        updateVBO(aBufferUsageHing, m_polygon_type);
+        }
+}
+
+
+//---------------------------------------------------------------
+void PolygonMesh::loadBinarySTLFile(bool aMoveToCentreFlag,
+                                    bool anAutoComputeNormalFlag,
+                                    bool aPrintDebugInfoFlag,
+                                    bool aCreateVBOFlag,
+                                    RATIONAL_NUMBER aScale,
+                                    int aBufferUsageHing)
+//---------------------------------------------------------------
+{
+    // Reset the data
+    reset();
+
+    // Open the file in reading more
+    std::ifstream input_stream(m_filename.c_str(),
+            std::ios::in | std::ios::binary);
+
+    // The file is not open
+    if (!input_stream.is_open())
+        {
+        throw FileDoesNotExistException(__FILE__, __FUNCTION__, __LINE__,
+                m_filename);
+        }
 
     struct stat stat_buf;
     int rc = stat(m_filename.c_str(), &stat_buf);
@@ -542,12 +683,13 @@ void PolygonMesh::loadSTLFile(bool aMoveToCentreFlag,
                 m_filename);
         }
 
+    char* p_data(0);
     p_data = new char[stat_buf.st_size];
 
     input_stream.read(p_data, stat_buf.st_size);
 
     // Load the data
-    loadSTLDataFromStream(p_data,
+    loadSTLDataFromBinaryStream(p_data,
             aMoveToCentreFlag,
             anAutoComputeNormalFlag,
             aPrintDebugInfoFlag,
@@ -562,15 +704,15 @@ void PolygonMesh::loadSTLFile(bool aMoveToCentreFlag,
 }
 
 
-//------------------------------------------------------------------
-void PolygonMesh::loadSTLDataFromStream(const char* apInputData,
-                                        bool aMoveToCentreFlag,
-                                        bool anAutoComputeNormalFlag,
-                                        bool aPrintDebugInfoFlag,
-                                        bool aCreateVBOFlag,
-                                        RATIONAL_NUMBER aScale,
-                                        int aBufferUsageHing)
-//------------------------------------------------------------------
+//------------------------------------------------------------------------
+void PolygonMesh::loadSTLDataFromBinaryStream(const char* apInputData,
+                                              bool aMoveToCentreFlag,
+                                              bool anAutoComputeNormalFlag,
+                                              bool aPrintDebugInfoFlag,
+                                              bool aCreateVBOFlag,
+                                              RATIONAL_NUMBER aScale,
+                                              int aBufferUsageHing)
+//------------------------------------------------------------------------
 {
     // Get the number of triangles in the file header
     // (the header is made of 80 bytes followded by the number of
