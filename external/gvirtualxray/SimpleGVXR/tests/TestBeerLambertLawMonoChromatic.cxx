@@ -119,7 +119,11 @@ TEST(TestBeerLambertLawMonoChromatic, TestBeerLambertLawPolyChromatic)
         }
 
     // Create a windowed mode window and its OpenGL context
+#ifdef HAS_EGL
+    createWindow(-1, 0, "EGL");
+#else
     createWindow();
+#endif
     setWindowSize(g_main_window_width, g_main_window_height);
 
     // Load the data

@@ -42,22 +42,24 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *   @file       OpenGLUtilities.h
 *
 *   @brief      Some utility functions about OpenGL.
+*               Now supports GLSL450 and OpenGL 4.5
 *
 *   @version    1.0
 *
-*   @date       13/01/2017
+*	@date		25/02/2020
 *
-*   @author     Dr Franck P. Vidal
+*	@author		Dr Franck P. Vidal
 *
-*   License
-*   BSD 3-Clause License.
+*	@section	License
+*				BSD 3-Clause License.
 *
-*   For details on use and redistribution please refer
-*   to http://opensource.org/licenses/BSD-3-Clause
+*				For details on use and redistribution please refer
+*				to http://opensource.org/licenses/BSD-3-Clause
 *
-*   Copyright
-*   (c) by Dr Franck P. Vidal (franck.p.vidal@fpvidal.net),
-*   http://www.fpvidal.net/, Jan 2017, 2017, version 1.1, BSD 3-Clause License
+*	@section	Copyright
+*				(c) by Dr Franck P. Vidal (franck.p.vidal@fpvidal.net),
+*				http://www.fpvidal.net/, Feb 2020, 2020, version 1.0,
+*				BSD 3-Clause License
 *
 ********************************************************************************
 */
@@ -72,23 +74,23 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <vector>
 
-#ifndef GVXR_MATRIX4X4_H
+#ifndef __Matrix4x4_h
 #include "gVirtualXRay/Matrix4x4.h"
 #endif
 
-#ifndef GVXR_TYPES_H
+#ifndef __Types_h
 #include "gVirtualXRay/Types.h"
 #endif
 
-#ifndef GVXR_VBO_H
+#ifndef __VBO_h
 #include "gVirtualXRay/VBO.h"
 #endif
 
-#ifndef GVXR_OPENGL2_VBO_H
+#ifndef __OpenGL2VBO_h
 #include "gVirtualXRay/OpenGL2VBO.h"
 #endif
 
-#ifndef GVXR_OPENGL3_VBO_H
+#ifndef __OpenGL3VBO_h
 #include "gVirtualXRay/OpenGL3VBO.h"
 #endif
 
@@ -506,13 +508,23 @@ void applyModelViewMatrix();
 
 
 //------------------------------------------------------------------------------
-/// Check if OpenGL 3.2 or above is supported by the current OpenGL context.
+/// Check if OpenGL 4.5 is supported by the current OpenGL context.
 /*
-* @return   true if the current OpenGL context supports OpenGL 3.x or above,
+* @return   true if the current OpenGL context supports OpenGL 4.5,
 *           false otherwise
 */
 //------------------------------------------------------------------------------
-bool useOpenGL3_2OrAbove();
+bool useOpenGL45();
+
+
+//------------------------------------------------------------------------------
+/// Check if OpenGL 3.2 is supported by the current OpenGL context.
+/*
+* @return   true if the current OpenGL context supports OpenGL 3.2,
+*           false otherwise
+*/
+//------------------------------------------------------------------------------
+bool useOpenGL32();
 
 
 //------------------------------------------------------------------------------

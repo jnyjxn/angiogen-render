@@ -80,9 +80,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gVirtualXRay/gVirtualXRayConfig.h"
 #endif
 
-#define GLFW_INCLUDE_GLCOREARB 1
-#include <GLFW/glfw3.h>
-
 #ifndef __Types_h
 #include "gVirtualXRay/Types.h"
 #endif
@@ -139,6 +136,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gVirtualXRay/Exception.h"
 #endif
 
+#ifndef __Context_h
+#include "gVirtualXRay/Context.h"
+#endif
+
 
 //******************************************************************************
 //  Name space
@@ -155,12 +156,7 @@ using namespace gVirtualXRay;
 //******************************************************************************
 //  Global variables
 //******************************************************************************
-//******************************************************************************
-//  Global variables
-//******************************************************************************
-GLsizei g_main_window_width(1280 / 2.0);
-GLsizei g_main_window_height(800 / 2.0);
-GLFWwindow* g_p_main_window_id(0);
+Context g_GL_context;
 
 Matrix4x4<GLfloat> g_sample_rotation_matrix;
 
@@ -218,37 +214,15 @@ TEST(TestPhantomMonoChromatic, TestPhantomMonoChromatic)
         g_number_of_pixels.setY(g_number_of_pixels.getY() + 1);
         }
 
-    // Set an error callback
-    glfwSetErrorCallback(errorCallback);
+    // Register the exit callback
+    atexit(quit);
 
-    // Initialize GLFW
-    ASSERT_EQ(glfwInit(), GLFW_TRUE) << "Cannot initialise GLFW.";
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_VISIBLE, false);
-
-    // Enable anti-aliasing
-    glfwWindowHint(GLFW_SAMPLES, 4);
-
-    // Create a windowed mode window and its OpenGL context
-    g_p_main_window_id = glfwCreateWindow(g_main_window_width,
-        g_main_window_height,
-        "gVirtualXRay -- Unit testing: Phantom with monochromatic sources.",
-        0,
-        0);
-
-    // Window cannot be created
-    if (!g_p_main_window_id)
-        {
-        glfwTerminate();
-        }
-    ASSERT_TRUE(g_p_main_window_id) << "Cannot create a GLFW windowed mode window and its OpenGL context.";
-
-    // Make the window's context current
-    glfwMakeContextCurrent(g_p_main_window_id);
+    // Create an OpenGL context
+#ifdef HAS_EGL
+    g_GL_context.create("EGL", 3, 2);
+#else
+    g_GL_context.create("OpenGL", 3, 2);
+#endif
 
     // Initialise GLEW
     initialiseGLEW();
@@ -266,11 +240,6 @@ TEST(TestPhantomMonoChromatic, TestPhantomMonoChromatic)
 
     // Add the geometry to the X-ray renderer
     loadSTLFile();
-
-    // Set the projection matrix
-    GLint width(0);
-    GLint height(0);
-    glfwGetFramebufferSize(g_p_main_window_id, &width, &height);
 
     // Output the detector properties
     std::cout << "Detector size: " << g_number_of_pixels.getX() << "x" << g_number_of_pixels.getY() << " pixels" << std::endl;
@@ -338,19 +307,8 @@ TEST(TestPhantomMonoChromatic, TestPhantomMonoChromatic)
     //reconstruction_in_HU_at_44keV.save("TestPhantomMonoChromatic_33keV_FBP_in_HU_at_44keV.mha");
 
 
-    // Close the window
-    glfwSetWindowShouldClose(g_p_main_window_id, GL_TRUE);
-
-    // Close the window and shut GLFW
+    // Close the window and shut EGL
     quit();
-}
-
-
-//----------------------------------------------------
-void errorCallback(int error, const char* description)
-//----------------------------------------------------
-{
-    std::cerr << "GLFW error: " << description << std::endl;
 }
 
 
@@ -358,12 +316,7 @@ void errorCallback(int error, const char* description)
 void quit()
 //---------
 {
-    if (g_p_main_window_id)
-        {
-        glfwDestroyWindow(g_p_main_window_id);
-        g_p_main_window_id = 0;
-        //glfwTerminate();
-        }
+	g_GL_context.release();
 }
 
 

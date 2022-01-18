@@ -38,22 +38,24 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *	@file		OpenGLUtilities.inl
 *
 *	@brief		Some utility functions about OpenGL.
+*               Now supports GLSL450 and OpenGL 4.5
 *
 *	@version	1.0
 *
-*	@date		07/11/2013
+*	@date		25/02/2020
 *
 *	@author		Dr Franck P. Vidal
 *
-*   License
-*   BSD 3-Clause License.
+*	@section	License
+*				BSD 3-Clause License.
 *
-*   For details on use and redistribution please refer
-*   to http://opensource.org/licenses/BSD-3-Clause
+*				For details on use and redistribution please refer
+*				to http://opensource.org/licenses/BSD-3-Clause
 *
-*   Copyright
-*   (c) by Dr Franck P. Vidal (franck.p.vidal@fpvidal.net), 
-*   http://www.fpvidal.net/, Dec 2014, 2014, version 1.0, BSD 3-Clause License
+*	@section	Copyright
+*				(c) by Dr Franck P. Vidal (franck.p.vidal@fpvidal.net),
+*				http://www.fpvidal.net/, Feb 2020, 2020, version 1.0,
+*				BSD 3-Clause License
 *
 ********************************************************************************
 */
@@ -116,7 +118,7 @@ inline void popProjectionMatrix()
 	{
 		throw OutOfBoundsException(__FILE__, __FUNCTION__, __LINE__);
 	}
-	
+
 	// Restore the matrix
 	g_current_projection_matrix = g_p_projection_matrix_stack.back();
 
@@ -134,7 +136,7 @@ inline void popModelViewMatrix()
 	{
 		throw OutOfBoundsException(__FILE__, __FUNCTION__, __LINE__);
 	}
-	
+
 	// Restore the matrix
 	g_current_modelview_matrix = g_p_modelview_matrix_stack.back();
 	applyModelViewMatrix();
@@ -173,12 +175,12 @@ inline MATRIX4 buildOrthoProjectionMatrix(double left,
 	double t_y(-(top   + bottom) / (top   - bottom));
 	double t_z(-(farPlane   + nearPlane)   / (farPlane   - nearPlane));
 
-	return (MATRIX4(			
+	return (MATRIX4(
 		2.0 / (right - left),
 		0.0,
 		0.0,
 		0.0,
-		
+
 		0.0,
 		2.0 / (top   - bottom),
 		0.0,
@@ -236,12 +238,12 @@ inline MATRIX4 buildFrustumProjectionMatrix(double left,
 	double c(-(farPlane + nearPlane)   / (farPlane - nearPlane));
 	double d(-(2.0 * farPlane * nearPlane)   / (farPlane - nearPlane));
 
-	return (MATRIX4(			
+	return (MATRIX4(
 		2.0 * nearPlane / (right - left),
 		0.0,
 		0.0,
 		0.0,
-		
+
 		0.0,
 		2.0 * nearPlane / (top   - bottom),
 		0.0,
@@ -282,12 +284,12 @@ inline MATRIX4 buildPerspectiveProjectionMatrix(double fovy,
 {
 	double f(tan(gVirtualXRay::PI_2 - (((fovy * gVirtualXRay::PI) / 180.0) / 2.0)));
 
-	return (MATRIX4(			
+	return (MATRIX4(
 		f / aspect,
 		0.0,
 		0.0,
 		0.0,
-			
+
 		0.0,
 		f,
 		0.0,
@@ -323,7 +325,7 @@ inline void multiplyPerspectiveProjectionMatrix(double fovy,
 												double zNear,
 												double zFar)
 //------------------------------------------------------------
-{	
+{
 	g_current_projection_matrix *= buildPerspectiveProjectionMatrix(fovy, aspect, zNear, zFar);
 }
 
@@ -343,34 +345,34 @@ inline MATRIX4 buildLookAtModelViewMatrix(const VEC3& eye,
 
 	// Side vector: forward x up
 	VEC3 side(forward ^ up1);
-	
+
 	// New up vector: side x forward
 	VEC3 u(side.normal() ^ forward);
-		
 
-	MATRIX4 matrix( 	
+
+	MATRIX4 matrix(
 		side.getX(),
 		u.getX(),
 		-forward.getX(),
 		0.0,
-	
+
 		side.getY(),
 		u.getY(),
 		-forward.getY(),
 		0.0,
-	
+
 		side.getZ(),
 		u.getZ(),
 		-forward.getZ(),
 		0.0,
-	
+
 		0.0,
 		0.0,
 		0.0,
 		1.0);
-	
+
 	matrix.translate(-eye.getX(), -eye.getY(), -eye.getZ());
-	
+
 	return (matrix);
 }
 
@@ -396,7 +398,7 @@ inline void loadLookAtModelViewMatrix(const VEC3& eye,
 									  const VEC3& center,
 									  const VEC3& up)
 //-------------------------------------------------------
-{	
+{
 	g_current_modelview_matrix = buildLookAtModelViewMatrix(eye, center, up);
 }
 
@@ -412,7 +414,7 @@ inline void loadLookAtModelViewMatrix(double eyeX,
 									  double upY,
 									  double upZ)
 //---------------------------------------------------
-{	
+{
 	g_current_modelview_matrix = buildLookAtModelViewMatrix(
 			eyeX, eyeY, eyeZ,
 			centerX, centerY, centerZ,
@@ -424,7 +426,11 @@ inline void loadLookAtModelViewMatrix(double eyeX,
 inline VBO* createVBO()
 //---------------------
 {
-    if (useOpenGL3_2OrAbove())
+    if (useOpenGL45())
+    {
+        return (createOpenGL3VBO());
+    }
+    else if (useOpenGL45())
     {
         return (createOpenGL3VBO());
     }

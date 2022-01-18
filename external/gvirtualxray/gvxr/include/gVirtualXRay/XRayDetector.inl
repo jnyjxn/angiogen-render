@@ -66,10 +66,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <algorithm> // To sort the energy response
 
-
-#ifndef GVXR_OPENGL_UTILITIES_H
+#ifndef __OpenGLUtilities_h
 #include "gVirtualXRay/OpenGLUtilities.h"
+#endif
+
+#ifndef __FileDoesNotExistException_h
+#include "gVirtualXRay/FileDoesNotExistException.h"
 #endif
 
 
@@ -512,6 +516,79 @@ inline const RATIONAL_NUMBER& XRayDetector::getFOVY() const
 }
 
 
+//---------------------------------------------
+inline void XRayDetector::clearEnergyResponse()
+//---------------------------------------------
+{
+		m_energy_response.clear();
+}
+
+
+//--------------------------------------------------------------------------------
+inline void XRayDetector::loadEnergyResponse(const std::string& aFileName,
+  		        															 const RATIONAL_NUMBER& aUnitOfEnergy)
+//--------------------------------------------------------------------------------
+{
+		// Empty the current beam spectrum
+		m_energy_response.clear();
+
+		// Open the file
+		std::ifstream energy_response_input_stream(aFileName);
+
+		// The file is not open
+		if (!energy_response_input_stream.is_open())
+		{
+				throw FileDoesNotExistException(__FILE__, __FUNCTION__, __LINE__, aFileName);
+		}
+
+		// Load the file
+		double input_energy;
+		double output_energy;
+		while (energy_response_input_stream >> input_energy >> output_energy)
+		{
+				// The record is valid
+				if (!energy_response_input_stream.eof())
+				{
+						input_energy *= aUnitOfEnergy;
+						output_energy *= aUnitOfEnergy;
+
+						m_energy_response.push_back(std::pair<RATIONAL_NUMBER, RATIONAL_NUMBER>(input_energy, output_energy));
+				}
+		}
+
+		// Sort the energy response on input energy
+		std::sort(m_energy_response.begin(), m_energy_response.end());
+}
+
+
+//---------------------------------------------------------------------------------------------
+inline RATIONAL_NUMBER XRayDetector::applyEnergyResponse(const RATIONAL_NUMBER& anEnergy) const
+//---------------------------------------------------------------------------------------------
+{
+		// There is no energy response, consider the perfect case
+		if (!m_energy_response.size())
+		{
+				return anEnergy;
+		}
+
+		// Deal with extreme cases
+		if (m_energy_response.front().first >= anEnergy) return m_energy_response.front().second;
+		if (m_energy_response.back().first <= anEnergy) return m_energy_response.back().second;
+
+		// Find the closest energy in the energy response
+    int nearest_energy_idx = findNearestEnergyIdx(anEnergy);
+
+		// Interpolate the values
+		RATIONAL_NUMBER corrected_energy = interpolate(m_energy_response[nearest_energy_idx].first,
+				m_energy_response[nearest_energy_idx + 1].first,
+				anEnergy,
+				m_energy_response[nearest_energy_idx].second,
+				m_energy_response[nearest_energy_idx + 1].second);
+
+		return corrected_energy;
+}
+
+
 //--------------------------------------------------
 inline void XRayDetector::updateSizeInUnitOfLength()
 //--------------------------------------------------
@@ -570,6 +647,28 @@ inline void XRayDetector::updateFOVY()
 //------------------------------------
 {
     m_fovy = 2.0 * (180.0  / PI) * atan2(RATIONAL_NUMBER(m_size_in_unit_of_length.getY() / 2.0), m_distance_source_detector);
+}
+
+
+//----------------------------------------------------------------------------------
+inline int XRayDetector::findNearestEnergyIdx(const RATIONAL_NUMBER& anEnergy) const
+//----------------------------------------------------------------------------------
+{
+		// The energy response is empty
+		if (!m_energy_response.size())
+		{
+				throw OutOfBoundsException(__FILE__, __FUNCTION__, __LINE__);
+		}
+
+		if (m_energy_response.front().first >= anEnergy) return 0;
+		if (m_energy_response.back().first <= anEnergy) return (m_energy_response.size() - 1);
+
+		for (int i = 0; i < m_energy_response.size() - 1; ++i)
+		{
+				if (m_energy_response[i].first <= anEnergy && anEnergy <= m_energy_response[i + 1].first) return i;
+		}
+
+		return (m_energy_response.size() - 1);
 }
 
 

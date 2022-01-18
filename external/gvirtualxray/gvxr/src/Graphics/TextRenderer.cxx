@@ -93,6 +93,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "text_display_gl3.frag.h"
 #include "text_display_gl3.vert.h"
+
+#include "text_display_gl4.frag.h"
+#include "text_display_gl4.vert.h"
 #endif
 
 
@@ -379,16 +382,21 @@ void TextRenderer::initialiseInternalStates(unsigned int aFontSize)
         std::string vertex_shader;
         std::string fragment_shader;
 
-        if (useOpenGL3_2OrAbove())
-        {
-            z_lib_return_code_vertex   = inflate(g_text_display_gl3_vert, sizeof(g_text_display_gl3_vert),   &p_vertex_shader);
-            z_lib_return_code_fragment = inflate(g_text_display_gl3_frag, sizeof(g_text_display_gl3_frag), &p_fragment_shader);
-        }
-        else
-        {
+        if (useOpenGL45())
+    	{
+    	    z_lib_return_code_vertex   = inflate(g_text_display_gl4_vert, sizeof(g_text_display_gl4_vert),   &p_vertex_shader);
+    	    z_lib_return_code_fragment = inflate(g_text_display_gl4_frag, sizeof(g_text_display_gl4_frag), &p_fragment_shader);
+    	}
+        else if (useOpenGL32())
+    	{
+    	    z_lib_return_code_vertex   = inflate(g_text_display_gl3_vert, sizeof(g_text_display_gl3_vert),   &p_vertex_shader);
+    	    z_lib_return_code_fragment = inflate(g_text_display_gl3_frag, sizeof(g_text_display_gl3_frag), &p_fragment_shader);
+    	}
+    	else
+    	{
             z_lib_return_code_vertex   = inflate(g_text_display_gl2_vert, sizeof(g_text_display_gl2_vert),   &p_vertex_shader);
             z_lib_return_code_fragment = inflate(g_text_display_gl2_frag, sizeof(g_text_display_gl2_frag), &p_fragment_shader);
-        }
+    	}
 
         vertex_shader   = p_vertex_shader;
         fragment_shader = p_fragment_shader;

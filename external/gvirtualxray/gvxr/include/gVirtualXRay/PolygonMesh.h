@@ -269,35 +269,8 @@ public:
         bool aCreateVBOFlag,
         RATIONAL_NUMBER aScale,
         int aBufferUsageHing);
-
-
-    //--------------------------------------------------------------------------
-    /// Set the name of the file that contains the polygon mesh.
-    /**
-     * @param apInputData:             the input data to load
-     * @param aMoveToCentreFlag:       a flag to move the polygon to the centre
-     *                                  or not
-     * @param anAutoComputeNormalFlag: a flag to compute normals or nor
-     * @param aPrintDebugInfoFlag:     a flag to display additional debug
-     *                                 information in the console or not
-     * @param aCreateVBOFlag:          a flag to use a vertex buffer object or
-     *                                 not
-     * @param aScale:                  the unit in which data is stored in
-     *                                 the file (e.g. mm, cm, m)
-     * @param aBufferUsageHing:        the buffer usage hint; valid values are:
-     *                                 GL_STATIC_DRAW, GL_DYNAMIC_DRAW and
-     *                                 GL_STREAM_DRAW
-     */
-    //--------------------------------------------------------------------------
-    void loadSTLDataFromStream(const char* apInputData,
-            bool aMoveToCentreFlag,
-            bool anAutoComputeNormalFlag,
-            bool aPrintDebugInfoFlag,
-            bool aCreateVBOFlag,
-            RATIONAL_NUMBER aScale,
-            int aBufferUsageHing);
-
-
+        
+        
     //--------------------------------------------------------------------------
     /// Write the STL file.
     //--------------------------------------------------------------------------
@@ -1313,6 +1286,83 @@ protected:
     /// Copy an index set.
     //--------------------------------------------------------------------------
     void copyIndexSet(const void* apIndexSet);
+
+
+    //--------------------------------------------------------------------------
+    /// Set the name of the file that contains the polygon mesh.
+    /**
+     * @param aMoveToCentreFlag:       a flag to move the polygon to the center
+     *                                  or not
+     * @param anAutoComputeNormalFlag: a flag to compute normals or not
+     * @param aPrintDebugInfoFlag:     a flag to display additional debug
+     *                                  information in the console or not
+     * @param aCreateVBOFlag:          a flag to use a vertex buffer object or
+     *                                  not
+     * @param aScale:                  the unit in which data is stored in
+     *                                  the file (e.g. mm, cm, m)
+     * @param aBufferUsageHing:        the buffer usage hint; valid values are:
+     *                                  GL_STATIC_DRAW, GL_DYNAMIC_DRAW and
+     *                                  GL_STREAM_DRAW
+     */
+    //--------------------------------------------------------------------------
+    void loadASCIISTLFile(bool aMoveToCentreFlag,
+        bool anAutoComputeNormalFlag,
+        bool aPrintDebugInfoFlag,
+        bool aCreateVBOFlag,
+        RATIONAL_NUMBER aScale,
+        int aBufferUsageHing);
+
+
+    //--------------------------------------------------------------------------
+    /// Set the name of the file that contains the polygon mesh.
+    /**
+     * @param aMoveToCentreFlag:       a flag to move the polygon to the center
+     *                                  or not
+     * @param anAutoComputeNormalFlag: a flag to compute normals or not
+     * @param aPrintDebugInfoFlag:     a flag to display additional debug
+     *                                  information in the console or not
+     * @param aCreateVBOFlag:          a flag to use a vertex buffer object or
+     *                                  not
+     * @param aScale:                  the unit in which data is stored in
+     *                                  the file (e.g. mm, cm, m)
+     * @param aBufferUsageHing:        the buffer usage hint; valid values are:
+     *                                  GL_STATIC_DRAW, GL_DYNAMIC_DRAW and
+     *                                  GL_STREAM_DRAW
+     */
+    //--------------------------------------------------------------------------
+    void loadBinarySTLFile(bool aMoveToCentreFlag,
+        bool anAutoComputeNormalFlag,
+        bool aPrintDebugInfoFlag,
+        bool aCreateVBOFlag,
+        RATIONAL_NUMBER aScale,
+        int aBufferUsageHing);
+
+
+    //--------------------------------------------------------------------------
+    /// Set the name of the file that contains the polygon mesh.
+    /**
+     * @param apInputData:             the input data to load
+     * @param aMoveToCentreFlag:       a flag to move the polygon to the centre
+     *                                  or not
+     * @param anAutoComputeNormalFlag: a flag to compute normals or nor
+     * @param aPrintDebugInfoFlag:     a flag to display additional debug
+     *                                 information in the console or not
+     * @param aCreateVBOFlag:          a flag to use a vertex buffer object or
+     *                                 not
+     * @param aScale:                  the unit in which data is stored in
+     *                                 the file (e.g. mm, cm, m)
+     * @param aBufferUsageHing:        the buffer usage hint; valid values are:
+     *                                 GL_STATIC_DRAW, GL_DYNAMIC_DRAW and
+     *                                 GL_STREAM_DRAW
+     */
+    //--------------------------------------------------------------------------
+    void loadSTLDataFromBinaryStream(const char* apInputData,
+            bool aMoveToCentreFlag,
+            bool anAutoComputeNormalFlag,
+            bool aPrintDebugInfoFlag,
+            bool aCreateVBOFlag,
+            RATIONAL_NUMBER aScale,
+            int aBufferUsageHing);
 
 
     /// Name of the file that contains the polygon mesh

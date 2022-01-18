@@ -103,7 +103,7 @@ OpenGLException::OpenGLException(const char* aFileName,
 //---------------------------------------------------------
 {
 	std::stringstream error_message;
-	error_message << "OpenGL error: " << gluErrorString(anErrorCode) << std::endl; 
+	//error_message << "OpenGL error: " << gluErrorString(anErrorCode) << std::endl; 
 	error_message << "\t- in File: " << aFileName << std::endl; 
 	error_message << "\t- in Function: " << aFunctionName << std::endl; 
 	error_message << "\t- at Line: " << anErrorLine << std::endl;

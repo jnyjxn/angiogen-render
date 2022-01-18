@@ -17,6 +17,10 @@ set_property(
 
 swig_link_libraries(${module} ${SimpleGVXR_LIBRARY} ${SimpleGVXR_LIBRARIES})
 
+IF (USE_SUPERBUILD)
+    ADD_DEPENDENCIES(${module} SimpleGVXR)
+ENDIF ()
+
 configure_file(test.tcl.in ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/test.tcl)
 FILE(COPY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/test.tcl
 		DESTINATION ${CMAKE_CURRENT_BINARY_DIR}

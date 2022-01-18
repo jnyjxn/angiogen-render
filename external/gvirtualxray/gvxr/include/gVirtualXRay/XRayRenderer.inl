@@ -52,7 +52,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *   to http://opensource.org/licenses/BSD-3-Clause
 *
 *   Copyright
-*   (c) by Dr Franck P. Vidal (franck.p.vidal@fpvidal.net), 
+*   (c) by Dr Franck P. Vidal (franck.p.vidal@fpvidal.net),
 *   http://www.fpvidal.net/, Dec 2014, 2014, version 1.0, BSD 3-Clause License
 *
 ********************************************************************************
@@ -116,6 +116,34 @@ namespace gVirtualXRay {
     //----------------------------------
     {
         release();
+    }
+
+
+    //-----------------------------------------------------------------------------
+    inline RATIONAL_NUMBER XRayRenderer::getTotalEnergyWithDetectorResponse() const
+    //-----------------------------------------------------------------------------
+    {
+        RATIONAL_NUMBER total_energy = 0.0;
+
+        // Proceed each energy channel
+        for (unsigned int current_slice(0);
+            current_slice < m_p_xray_beam->getEnergyChannelNumber();
+            ++current_slice)
+        {
+            RATIONAL_NUMBER photon_number(m_p_xray_beam->getEnergyChannel(current_slice).getPhotonNumber());
+    				RATIONAL_NUMBER photon_energy(m_p_xray_beam->getEnergyChannel(current_slice).getPhotonEnergy());
+
+            //std::cout << current_slice << "\t" << photon_number << "\t" << photon_energy;
+
+            // Apply the energy response
+    				photon_energy = m_p_detector->applyEnergyResponse(photon_energy);
+    				RATIONAL_NUMBER input_energy(photon_number * photon_energy / RATIONAL_NUMBER(m_p_detector->getNumberOfSourceSamples()));
+
+            //std::cout << "\t" << photon_energy << std::endl;
+            total_energy += input_energy;
+        }
+
+        return total_energy;
     }
 
 
@@ -400,8 +428,8 @@ namespace gVirtualXRay {
     {
         return (MaterialSet::getInstance().getMaterial(HU).getMu(HU, anEnergy));
     }
-    
-    
+
+
     //--------------------------------------------------------------------------------------------
     inline RATIONAL_NUMBER XRayRenderer::getMassAttenuationFromHU(const RATIONAL_NUMBER& HU,
                                                                   const RATIONAL_NUMBER& anEnergy)
@@ -409,16 +437,16 @@ namespace gVirtualXRay {
     {
         return (MaterialSet::getInstance().getMaterial(HU).getMassAttenuationTotal(anEnergy));
     }
-    
-    
+
+
     //------------------------------------------------------------------------------
     inline RATIONAL_NUMBER XRayRenderer::getDensityFromHU(const RATIONAL_NUMBER& HU)
     //------------------------------------------------------------------------------
     {
         return (TissueMaterial::getDensity(HU));
     }
-    
-    
+
+
     //-------------------------------------------------------------------------------
     inline RATIONAL_NUMBER XRayRenderer::getElementMu(const char* anElementSymbol,
                                                      const RATIONAL_NUMBER& anEnergy)
@@ -426,8 +454,8 @@ namespace gVirtualXRay {
     {
         return (ElementSet::getInstance().getElement(anElementSymbol).getMU(anEnergy));
     }
-    
-    
+
+
     //--------------------------------------------------------------------------------------------
     inline RATIONAL_NUMBER XRayRenderer::getElementMassAttenuation(const char* anElementSymbol,
                                                                   const RATIONAL_NUMBER& anEnergy)
@@ -435,16 +463,16 @@ namespace gVirtualXRay {
     {
         return (ElementSet::getInstance().getElement(anElementSymbol).getMassAttenuationTotal(anEnergy));
     }
-    
-    
+
+
     //------------------------------------------------------------------------------
     inline RATIONAL_NUMBER XRayRenderer::getElementDensity(const char* anElementSymbol)
     //------------------------------------------------------------------------------
     {
         return (ElementSet::getInstance().getElement(anElementSymbol).getDensity());
     }
-    
-    
+
+
     //----------------------------------------------------------------
     inline unsigned int XRayRenderer::getNumberOfInnerSurfaces() const
     //----------------------------------------------------------------
@@ -508,7 +536,7 @@ namespace gVirtualXRay {
     {
         return (m_max_value_in_simulated_xray_image);
     }
-    
+
 
     //-------------------------------------------------------------------------------
     inline const Sinogram<XRayRenderer::PixelType>& XRayRenderer::getSinogram() const
@@ -602,7 +630,7 @@ namespace gVirtualXRay {
     {
         RATIONAL_NUMBER* p_target(const_cast<RATIONAL_NUMBER*>(m_l_buffer_image.getRawData()));
         RATIONAL_NUMBER* p_source = 0;
-        
+
         if (m_use_l_buffer_artefact_filtering_on_gpu || m_use_l_buffer_artefact_filtering_on_cpu)
         {
             p_source = const_cast<XRayRenderer*>(this)->getFBO(XRAY_DETECTOR_CLEANED_LBUFFER_FBO_ID);
@@ -611,22 +639,22 @@ namespace gVirtualXRay {
         {
             p_source = const_cast<XRayRenderer*>(this)->getFBO(XRAY_DETECTOR_UNCLEANED_LBUFFER_FBO_ID);
         }
-        
+
         memcpy(p_target,
                p_source,
                sizeof(RATIONAL_NUMBER) * m_l_buffer_image.getWidth() * m_l_buffer_image.getHeight());
-        
+
         return (m_l_buffer_image);
     }
-    
-    
+
+
     //---------------------------------------------------------------
     inline Image<XRayRenderer::PixelType>& XRayRenderer::getLBuffer()
     //---------------------------------------------------------------
     {
         RATIONAL_NUMBER* p_target(m_l_buffer_image.getRawData());
         RATIONAL_NUMBER* p_source = 0;
-        
+
         if (m_use_l_buffer_artefact_filtering_on_gpu)
         {
             p_source = const_cast<XRayRenderer*>(this)->getFBO(XRAY_DETECTOR_CLEANED_LBUFFER_FBO_ID);
@@ -642,8 +670,8 @@ namespace gVirtualXRay {
 
         return (m_l_buffer_image);
     }
-    
-    
+
+
 
 
     //---------------------------------------------------------------------------
@@ -686,7 +714,7 @@ namespace gVirtualXRay {
     {
         RATIONAL_NUMBER* p_target(m_l_buffer_image.getRawData());
         RATIONAL_NUMBER* p_source = 0;
-        
+
         if (m_use_l_buffer_artefact_filtering_on_gpu)
         {
             p_source = const_cast<XRayRenderer*>(this)->getFBO(XRAY_DETECTOR_CLEANED_LBUFFER_FBO_ID);
@@ -695,11 +723,11 @@ namespace gVirtualXRay {
         {
             p_source = const_cast<XRayRenderer*>(this)->getFBO(XRAY_DETECTOR_UNCLEANED_LBUFFER_FBO_ID);
         }
-        
+
         memcpy(p_target,
                p_source,
                sizeof(RATIONAL_NUMBER) * m_l_buffer_image.getWidth() * m_l_buffer_image.getHeight());
-        
+
         return (m_l_buffer_image.getRawData());
     }
 
@@ -858,7 +886,7 @@ namespace gVirtualXRay {
     {
         printSinogram(aFileName.data(), useCompression);
     }
-    
+
 
     //-----------------------------------------------------------------
     inline void XRayRenderer::printProjectionSet(const char* aFileName, bool useCompression)
@@ -874,7 +902,7 @@ namespace gVirtualXRay {
     {
         printProjectionSet(aFileName.data(), useCompression);
     }
-    
+
 
     //--------------------------------------------
     inline void XRayRenderer::resetEnergyFluence()

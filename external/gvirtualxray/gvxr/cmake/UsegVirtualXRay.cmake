@@ -5,16 +5,16 @@
 
 
 # Use shared library
-SET(BUILD_SHARED_LIBS "${gVirtualXRay_BUILD_SHARED_LIBS}")
+SET(BUILD_SHARED_LIBS "${gVirtualXRay_BUILD_SHARED_LIBS}" PARENT_SCOPE)
 
 
 # C++ version
-set (CMAKE_CXX_STANDARD "${gVirtualXRay_CMAKE_CXX_STANDARD}")
+set (CMAKE_CXX_STANDARD "${gVirtualXRay_CMAKE_CXX_STANDARD}" PARENT_SCOPE)
 
 
 # C++ flags
-SET(CMAKE_C_FLAGS   "${gVirtualXRay_CMAKE_C_FLAGS}")
-SET(CMAKE_CXX_FLAGS "${gVirtualXRay_CMAKE_CXX_FLAGS}")
+SET(CMAKE_C_FLAGS   "${gVirtualXRay_CMAKE_C_FLAGS}" PARENT_SCOPE)
+SET(CMAKE_CXX_FLAGS "${gVirtualXRay_CMAKE_CXX_FLAGS}" PARENT_SCOPE)
 
 
 # Add preprocessor definitions
@@ -30,4 +30,4 @@ include_directories(BEFORE ${gVirtualXRay_INCLUDE_DIRS})
 link_directories(${gVirtualXRay_LIBRARY_DIRS})
 
 # Set gzip, using gVirtualXRay's configuration
-SET(GZIP_TOOL ${gVirtualXRay_GZIP_TOOL})
+SET(GZIP_TOOL ${gVirtualXRay_GZIP_TOOL} PARENT_SCOPE)
