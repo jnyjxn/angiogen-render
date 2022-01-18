@@ -108,13 +108,12 @@ class XRayRenderer(_Renderer):
 		self.gvxr.disableArtefactFiltering()
 
 	def _redirect_output(self):
-		pass
-		# self._devnull = open(os.devnull, 'w')
+		self._devnull = open(os.devnull, 'w')
 
-		# self._orig_stdout_fno = os.dup(sys.stdout.fileno())
-		# self._orig_stderr_fno = os.dup(sys.stderr.fileno())
-		# os.dup2(self._devnull.fileno(), 1)
-		# os.dup2(self._devnull.fileno(), 2)
+		self._orig_stdout_fno = os.dup(sys.stdout.fileno())
+		self._orig_stderr_fno = os.dup(sys.stderr.fileno())
+		os.dup2(self._devnull.fileno(), 1)
+		os.dup2(self._devnull.fileno(), 2)
 
 	def _restore_output(self):
 		os.dup2(self._orig_stdout_fno, 1)  # restore stdout
@@ -206,14 +205,27 @@ class XRayRenderer(_Renderer):
 
 class RenderEngine:
 	@staticmethod
-	def make_images(folder_path, image_set_definitions, file_suffix="", camera_config=None, debug=False, overwrite=False, save_png=False, save_npz=True, compress=True, resize_to=None):
-		print(f"\nMaking images for {folder_path}")
+	def make_images(folder_path, 
+			image_set_definitions, 
+			file_suffix="", 
+			camera_config=None, 
+			debug=False, 
+			overwrite=False, 
+			save_png=False, 
+			save_npz=True, 
+			compress=True, 
+			resize_to=None, 
+			renderer_cfg=None
+		):
 		file_extension = "npz" if save_npz else "npy"
 		if not overwrite and all([(folder_path / f"{name}{file_suffix}.{file_extension}").exists() for name in image_set_definitions]):
 			return True
+
+		if renderer_cfg is None:
+			renderer_cfg = {}
 		
 		t1 = time.time()
-		r = XRayRenderer(debug=debug)
+		r = XRayRenderer(debug=debug, **renderer_cfg)
 		t2 = time.time()
 
 		meshes_and_their_chemical_elements = {
@@ -256,6 +268,7 @@ class RenderEngine:
 			resize_to=None,
 			job_id=None, 
 			active_jobs=None,
+			renderer_cfg=None
 		):
 		if n_processes < 0:
 			n_processes = multiprocessing.cpu_count()
@@ -290,7 +303,8 @@ class RenderEngine:
 						"save_png": save_png, 
 						"save_npz": save_npz,
 						"compress": compress,
-						"resize_to": resize_to
+						"resize_to": resize_to,
+						"renderer_cfg": renderer_cfg
 					}, 
 					callback=add_successful, 
 					error_callback=add_unsuccessful

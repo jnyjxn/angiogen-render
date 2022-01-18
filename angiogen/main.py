@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 from entities.render import RenderEngine
 
@@ -6,21 +7,45 @@ root_dir = Path("/data")
 meshes = sorted(root_dir.rglob("**/mesh.stl"))
 mesh_dirs = [mesh.parents[0] for mesh in meshes]
 
+def generate_equidistant_points(n_points):
+	a = 4*math.pi/n_points
+	d = math.sqrt(a)
+
+	M_theta = round(math.pi/d)
+	d_theta = math.pi / M_theta
+	d_phi = a/d_theta
+
+	for m in range(M_theta - 1):
+		theta = math.pi*(m + 0.5)/M_theta
+		M_phi = round(2*math.pi*math.sin(theta)/d_phi)
+		for n in range(M_phi - 1):
+			phi = 2*math.pi*(n + 0.5)/M_phi
+			theta_d = (theta / math.pi) * 180
+			phi_d = (phi / math.pi) * 180
+			yield [180 - theta_d, phi_d]
+
 image_set_definitions = {
-	"test": [
-		[0,  0],
-		[10, 0],
+	"equidistant": list(generate_equidistant_points(50)),
+	"orthogonal": [
+		[0, 0],
+		[0, 90],
+		[90, 0],
 	]
 }
 
 args = {
-	"resize_to": [256, 256],
+	# "resize_to": [256, 256],
 	# "n_processes": 2,
-	"save_png": True,
+	# "save_png": True,
 	"save_npz": True,
 	"compress": True,
 	"overwrite": True,
-	"debug": True
+	# "debug": True,
+	"renderer_cfg": {
+		"image_size": [256, 256],
+		"pixel_size": [1, 1],
+		"beam_energy": 200
+	}
 }
 
 successful, unsuccessful, elapsed_time = RenderEngine.generate_data(
