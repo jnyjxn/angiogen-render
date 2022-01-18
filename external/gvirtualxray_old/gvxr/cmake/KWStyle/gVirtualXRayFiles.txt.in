@@ -1,3 +1,0 @@
-@gVirtualXRay_BASE_DIR@/include/gVirtualXRay/*.h
-#@gVirtualXRay_BASE_DIR@/include/gVirtualXRay/*.inl
-#@gVirtualXRay_BASE_DIR@/src/*/*.cxx

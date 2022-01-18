@@ -1,26 +1,13 @@
-FROM nvidia/cuda:11.4.2-devel-ubuntu20.04
-
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y \
+FROM python:3
+RUN apt update -y && apt-get install -y \
     build-essential \
     wget \
     git \
     curl \
     gcc \
     g++ \
-    freeglut3-dev \
-    libatlas-base-dev \
-    libboost-all-dev \
-    libcgal-dev \ 
-    libeigen3-dev \
-    libfreeimage-dev \
-    libgflags-dev \
-    libglew-dev \
-    libgoogle-glog-dev \
-    libsuitesparse-dev \
-    libxi-dev \
-    libxmu-dev \
-    qt5-default \
+    cmake \
+    subversion \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /external
@@ -59,96 +46,96 @@ RUN echo "export PYTHONPATH=/miniconda/envs/lib/python3.8/site-packages:$PYTHONP
 RUN echo "export NCCL_LL_THRESHOLD=0" >> /etc/profile
 RUN echo "umask 002" >> /etc/profile
 
-ENV NCCL_LL_THRESHOLD=0
-ENV PYOPENGL_PLATFORM=osmesa
+# set the working directory in the container
+WORKDIR /external
 
-RUN apt-get install -y \
-    libzstd-dev \
-    libxinerama-dev \
-    libxrandr-dev \
-    libxcursor-dev \
-    libfftw3-dev \
-    googletest \
-    swig4.0 \
-    libxcomp-dev \
-    libtiff-dev \
-    libassimp-dev \
-    libzthread-dev \
-    libgtest-dev \
-    libglfw3 \
-    libglfw3-dev \
-    libxcomposite-dev \
-    libx11-dev \
-    libxxf86vm-dev \
-    libxorg-gtest-dev \
-    glew-utils \
-    libglewmx-dev \
-    libgl1-mesa-glx \
-    mesa-utils \
-    libgl-dev \
-    libosmesa-dev \
-    libtiff5-dev \
-    libglvnd0 \
+# copy the dependencies file to the working directory
+COPY requirements.txt ./
+
+ # install dependencies
+RUN pip install -r requirements.txt
+
+
+# RUN apt-get update && apt-get install -y cmake build-essential
+# RUN git clone https://github.com/tomopy/tomopy.git
+# WORKDIR /external/tomopy
+# RUN python setup.py install
+
+WORKDIR /external
+
+# Get gvxr
+RUN svn checkout -r 2109 svn://zedbluffer@svn.code.sf.net/p/gvirtualxray/code/branches/better_support_of_GL_context gvirtualxray
+
+RUN mkdir gvirtualxray/bin
+
+# Change workdir
+WORKDIR /external/gvirtualxray/bin
+
+# Build
+RUN apt-get update && apt-get install -y libxi-dev swig libxmu-dev mesa-utils
+RUN apt-get update && apt-get install -y libglew-dev glew-utils 
+RUN apt-get update && apt-get install -y libxrandr-dev libxcursor-dev
+RUN apt-get update && apt-get install -y libxinerama-dev libxxf86vm-dev
+RUN apt-get update && apt-get install -y libglfw3 libglfw3-dev
+ENV CC=/usr/bin/gcc
+ENV CXX=/usr/bin/g++
+RUN cmake \
+        -DCMAKE_C_COMPILER:STRING=/usr/bin/gcc \
+        -DCMAKE_CXX_COMPILER:STRING=/usr/bin/g++ \
+        -DCMAKE_BUILD_TYPE:STRING=Release \
+        -DBUILD_SIMPLEGVXR:BOOL=ON \
+        -DBUILD_TESTING:BOOL=ON \
+        -DUSE_LIBTIFF:BOOL=ON \
+        -DBUILD_TESTING:BOOL=ON \
+        -DUSE_SYSTEM_GLFW:BOOL=OFF \
+        -DUSE_SYSTEM_GLEW:BOOL=OFF \
+        -DBUILD_WRAPPER_PYTHON3:BOOL=ON \
+        -DGLEW_USE_STATIC_LIBS:BOOL=ON \
+        -S .. \
+        -B .
+
+RUN make glew -j48
+RUN mkdir gvxr/glew-install/lib64
+RUN cp gvxr/glew-install/lib/lib*.a gvxr/glew-install/lib64
+RUN make glfw -j48
+RUN make googletest -j48
+
+RUN mkdir third_party/lib64
+RUN cp third_party/lib/lib*.a third_party/lib64
+RUN make assimp -j48
+RUN make gVirtualXRay -j48
+RUN make SimpleGVXR -j48
+RUN make gvxrPython3 -j48
+RUN make -j48
+
+# Install
+RUN make install
+
+RUN apt-get update && apt-get install -y     libglvnd0 \
     libgl1 \
     libglx0 \
     libegl1 \
     libxext6 \
     libx11-6 
 
-RUN wget -qO- "https://cmake.org/files/v3.21/cmake-3.21.1-linux-x86_64.tar.gz" | tar --strip-components=1 -xz -C /usr/local
-
-WORKDIR /angiogen
-COPY requirements.txt .
-
-# Install pip dependancy.
-RUN pip install -r requirements.txt
-
-WORKDIR /external/gvxr
-RUN mkdir src && mkdir bin && mkdir install
-COPY external/gvirtualxray src
-
-ENV GVXR_INSTALL_DIR=/external/gvxr/install
-ENV CC=/usr/bin/gcc
-
-WORKDIR /external/gvxr/bin
-RUN cmake \
-        -DCMAKE_BUILD_TYPE:STRING=Release \
-        -DCMAKE_INSTALL_PREFIX:STRING=$GVXR_INSTALL_DIR \
-        -DBUILD_TESTING=OFF \
-        -DBUILD_WRAPPER_PYTHON3=ON \
-        -DUSE_SYSTEM_ASSIMP=ON \
-        -DUSE_SYSTEM_GLEW=ON \
-        -DUSE_SYSTEM_GLFW=ON \
-        -DUSE_SYSTEM_GTEST=ON \
-        -DUSE_SYSTEM_LIBTIFF=ON \
-        -S /external/gvxr/src \
-        -B $PWD
-
-RUN make -j48
-RUN make install
-
+# Add in Python Path
+ENV PYTHONPATH=/usr/local/gvxrWrapper-1.0.6/python3/test.py
 ENV EGL_PLATFORM=x11
 
+# Env vars for the nvidia-container-runtime.
 ENV NVIDIA_VISIBLE_DEVICES=all
-ENV NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute,display
+ENV NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute
 
 WORKDIR /angiogen
-RUN cp /external/gvxr/install/gvxrWrapper-1.0.6/python3/* .
 
 RUN pip install pydantic
 RUN pip install scikit-image tqdm 
 RUN pip install fastapi "uvicorn[standard]"
 
-# RUN apt-get install -y xvfb
-# RUN pip install scikit-image tqdm fastapi "uvicorn[standard]"
-
 COPY angiogen .
+RUN cp /usr/local/gvxrWrapper-1.0.6/python3/* .
 
-ENV LIBGL_ALWAYS_INDIRECT=1
+CMD ["python3", "main.py"]
 
-# COPY external/gvirtualxray/Wrappers/welsh-dragon-small.stl /data
-
-# CMD nvidia-smi 
-# CMD python main.py
-# CMD uvicorn server:app --host 0.0.0.0 --port 80
-# CMD xvfb-run uvicorn server:app --host 0.0.0.0 --port 80
+# CMD [ "python3", "./test-offscreen.py" ]
+# CMD [ "echo", "hello" ]

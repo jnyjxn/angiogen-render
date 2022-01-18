@@ -89,7 +89,7 @@ class XRayRenderer(_Renderer):
 
 	def _init_gvxr(self):
 		importlib.reload(self.gvxr)
-		self.gvxr.createWindow()
+		self.gvxr.createWindow(0, 1, "EGL")
 
 		# NOTE: To obtain a like-for-like rendering wrt Optical render,
 		# 		replace below lines with the following and apply a horizontal flip to the 
@@ -175,6 +175,7 @@ class XRayRenderer(_Renderer):
 		self.centre_table()
 
 		images_output = ImageCollection()
+		print(angles_sequence)
 		for i, (ppa, psa) in enumerate(angles_sequence):
 			self.orient_fluoroscope(ppa, psa)
 			image, _ = self.get_image()

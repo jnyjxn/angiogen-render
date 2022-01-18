@@ -1,9 +1,10 @@
 CONTAINER_NAME=angiorender
-DATA_FOLDER=/data4/jja17/datasets/alt_angio
+DATA_FOLDER=/data4/jja17/datasets/spheres_test
 
 sudo xhost +local:root
 sudo docker build -t $CONTAINER_NAME . && \
-sudo docker run \
+sudo nvidia-docker run \
+    --runtime=nvidia \
     --rm \
     --gpus all \
     -p 80:80 \
@@ -11,4 +12,3 @@ sudo docker run \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -e DISPLAY=$DISPLAY \
     -it $CONTAINER_NAME:latest
-    # --runtime=nvidia -e NVIDIA_DRIVER_CAPABILITIES=compute,utility -e NVIDIA_VISIBLE_DEVICES=all \
