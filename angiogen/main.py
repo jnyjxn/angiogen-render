@@ -5,7 +5,7 @@ from utils.geometry import generate_equidistant_points
 
 args = {
 	# "resize_to": [256, 256], # [width, height], or None to not resize
-	"n_processes": -1, # -1 to use all available
+	"n_processes": -1, # -1 to use all available CPUs
 	"save_png": True, # save images as a png
 	"save_npz": True, # Save images as a numpy npz file, with the angles of the view as the keys, e.g. "90.0_90.0"
 	"compress": True, # Only used if save_npz is True: saves a compressed npz file instead of a regular npz file
