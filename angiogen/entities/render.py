@@ -70,6 +70,9 @@ class ImageCollection(object):
 class XRayRenderer(_Renderer):
 	def __init__(self, SID=1040, beam_energy=150, pixel_size=(0.25, 0.25), image_size=(1526, 1496), debug=False):
 		super().__init__(SID, beam_energy, pixel_size, image_size)
+
+		self.mesh_reference_names = []
+
 		self.debug = debug
 		if not self.debug:
 			self._redirect_output()
@@ -122,12 +125,17 @@ class XRayRenderer(_Renderer):
 
 	def get_image(self, **kwargs):
 		image = np.array(self.gvxr.computeXRayImage())
-		depth = np.array(self.gvxr.computeLBuffer("Exported"))
+
+		if len(self.mesh_reference_names) == 0:
+			depth = np.array([])
+		else:
+			depth = np.array(self.gvxr.computeLBuffer(self.mesh_reference_names[0]))
 	
 		return image.astype(np.uint8), depth
 
 	def centre_table(self):
-		self.gvxr.moveToCenter("Exported")
+		for mesh_ref in self.mesh_reference_names:
+			self.gvxr.moveToCenter(mesh_ref)
 
 	def orient_fluoroscope(self, new_ppa_angle=0, new_psa_angle=0):
 		old_ppa_angle = self.configuration["angle"][0]
@@ -136,12 +144,13 @@ class XRayRenderer(_Renderer):
 		self.configuration["angle"][0] = new_ppa_angle
 		self.configuration["angle"][1] = new_psa_angle
 
-		# Rotation is not commutative, so first undo any existing move in reverse order 
-		self.gvxr.rotateNode("Exported", -old_psa_angle, 1, 0, 0)
-		self.gvxr.rotateNode("Exported", -old_ppa_angle, 0, 0, 1)
+		for mesh_ref in self.mesh_reference_names:
+			# Rotation is not commutative, so first undo any existing move in reverse order 
+			self.gvxr.rotateNode(mesh_ref, -old_psa_angle, 1, 0, 0)
+			self.gvxr.rotateNode(mesh_ref, -old_ppa_angle, 0, 0, 1)
 
-		self.gvxr.rotateNode("Exported", new_ppa_angle, 0, 0, 1)
-		self.gvxr.rotateNode("Exported", new_psa_angle, 1, 0, 0)
+			self.gvxr.rotateNode(mesh_ref, new_ppa_angle, 0, 0, 1)
+			self.gvxr.rotateNode(mesh_ref, new_psa_angle, 1, 0, 0)
 
 	def move_table(self, new_table_x=0, new_table_y=0, new_table_z=0):
 		old_table_x = self.configuration["position"][0]
@@ -158,23 +167,29 @@ class XRayRenderer(_Renderer):
 
 		self.gvxr.translateScene(delta_table_x, delta_table_y, delta_table_z, "mm")
 
-	def add_mesh(self, stl_filepath, element="I"):
-		# Note that the below does not work if the file is a Scene rather than a Mesh
-		self.gvxr.loadMeshFile("Exported", stl_filepath, "mm")
-		self.gvxr.setElement("Exported", element)
+	def add_mesh(self, stl_filepath, houndsfield_unit=1000):
+		mesh_ref = f"mesh_{len(self.mesh_reference_names)}"
 
-	def deformMesh(self, xx=1, yy=1, zz=1, yx=0, zx=0, xy=0, zy=0, xz=0, yz=0):
-		self.gvxr.shearNode("Exported", yx, zx, xy, zy, xz, yz)
-		self.gvxr.scaleNode("Exported", xx, yy, zz, "mm")
+		# Note that the below does not work if the file is a Scene rather than a Mesh
+		self.gvxr.loadMeshFile(mesh_ref, stl_filepath, "mm")
+		print(houndsfield_unit)
+		self.gvxr.setHU(mesh_ref, houndsfield_unit)
+
+		self.mesh_reference_names.append(mesh_ref)
+
+	def deform_meshes(self, xx=1, yy=1, zz=1, yx=0, zx=0, xy=0, zy=0, xz=0, yz=0):
+		for mesh_ref in self.mesh_reference_names:
+			self.gvxr.shearNode(mesh_ref, yx, zx, xy, zy, xz, yz)
+			self.gvxr.scaleNode(mesh_ref, xx, yy, zz, "mm")
 	
-	def resetMesh(self):
-		self.gvxr.setNodeTransformationMatrix("Exported", [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+	def reset_meshes(self):
+		for mesh_ref in self.mesh_reference_names:
+			self.gvxr.setNodeTransformationMatrix(mesh_ref, [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
 	
 	def save_image_set(self, angles_sequence, save_dir, view_name, file_suffix="", save_png=False, save_npz=True, compress=True, resize_to=None):
 		self.centre_table()
 
 		images_output = ImageCollection()
-		print(angles_sequence)
 		for i, (ppa, psa) in enumerate(angles_sequence):
 			self.orient_fluoroscope(ppa, psa)
 			image, _ = self.get_image()
@@ -223,22 +238,22 @@ class RenderEngine:
 
 		if renderer_cfg is None:
 			renderer_cfg = {}
+
+		xray_renderer_cfg = {k:renderer_cfg[k] for k in ('SID','beam_energy','pixel_size','image_size') if k in renderer_cfg}
 		
 		t1 = time.time()
-		r = XRayRenderer(debug=debug, **renderer_cfg)
+		r = XRayRenderer(debug=debug, **xray_renderer_cfg)
 		t2 = time.time()
 
-		meshes_and_their_chemical_elements = {
-			"mesh.stl": "I",
-			# "myo_lv.stl": "I",
-			# "myo_rv.stl": "I",
-			# "myo_epi.stl": "I",
-			# "joined.stl": "I"
+		meshes_and_their_HU_default = {
+			"mesh.stl": 1000,
 		}
 
+		meshes_and_their_HU = renderer_cfg.get("meshes_and_their_HU", meshes_and_their_HU_default)
+
 		t3 = time.time()
-		for mesh_filepath, element in meshes_and_their_chemical_elements.items():
-			r.add_mesh(str(folder_path / mesh_filepath), element)
+		for mesh_filepath, houndsfield_unit in meshes_and_their_HU.items():
+			r.add_mesh(str(folder_path / mesh_filepath), houndsfield_unit)
 		
 		t4 = time.time()
 		for set_name, set_angles in image_set_definitions.items():

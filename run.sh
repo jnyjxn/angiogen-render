@@ -1,5 +1,8 @@
+# Change this line to point your data folder
+DATA_FOLDER=/data4/jja17/datasets/jacks_set
+
+# Leave below as is
 CONTAINER_NAME=angiorender
-DATA_FOLDER=/data4/jja17/datasets/spheres
 
 sudo xhost +local:root
 sudo docker build -t $CONTAINER_NAME . && \

@@ -136,6 +136,3 @@ COPY angiogen .
 RUN cp /usr/local/gvxrWrapper-1.0.6/python3/* .
 
 CMD ["python3", "main.py"]
-
-# CMD [ "python3", "./test-offscreen.py" ]
-# CMD [ "echo", "hello" ]
