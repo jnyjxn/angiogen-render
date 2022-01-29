@@ -91,6 +91,8 @@ RUN cmake \
         -DUSE_SYSTEM_GLEW:BOOL=OFF \
         -DBUILD_WRAPPER_PYTHON3:BOOL=ON \
         -DGLEW_USE_STATIC_LIBS:BOOL=ON \
+        -DPYTHON_LIBRARY:STRING=/external/miniconda/envs/py38/lib/libpython3.8.so \
+        -DPYTHON_INCLUDE_DIR:STRING=/external/miniconda/envs/py38/include/python3.8 \
         -S .. \
         -B .
 
